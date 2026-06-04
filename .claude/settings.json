@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sS http://localhost:8080/api/v1/integrations/pcx/deposits/methods -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1MzMzMGJiZS1mNzdhLTQ4MzEtYmY4NC0xMjBiMzBkYmU5NDUiLCJyb2xlIjoidXNlciIsInN1YiI6IjUzMzMwYmJlLWY3N2EtNDgzMS1iZjg0LTEyMGIzMGRiZTk0NSIsImV4cCI6MTc3OTI3NjE4NCwibmJmIjoxNzc5MTg5Nzg0LCJpYXQiOjE3NzkxODk3ODR9.MWCJ6IT17zijwT07h56VIev6Fp6yXIORI_VpMNne3L8' -w '\\\\n--- HTTP: %{http_code}\\\\n')",
+      "Bash(git push *)"
+    ]
+  }
+}
