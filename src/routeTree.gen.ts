@@ -17,6 +17,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StrategiesIndexRouteImport } from './routes/strategies.index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as UnfollowSuccessRouteImport } from './routes/unfollow.success'
 import { Route as UnfollowLoadingRouteImport } from './routes/unfollow.loading'
@@ -77,6 +78,11 @@ const ChangePasswordRoute = ChangePasswordRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StrategiesIndexRoute = StrategiesIndexRouteImport.update({
+  id: '/strategies/',
+  path: '/strategies/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/unfollow/loading': typeof UnfollowLoadingRoute
   '/unfollow/success': typeof UnfollowSuccessRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/strategies/': typeof StrategiesIndexRoute
   '/strategies/$strategyId/$step': typeof StrategiesStrategyIdStepRoute
 }
 export interface FileRoutesByTo {
@@ -246,6 +253,7 @@ export interface FileRoutesByTo {
   '/unfollow/loading': typeof UnfollowLoadingRoute
   '/unfollow/success': typeof UnfollowSuccessRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/strategies': typeof StrategiesIndexRoute
   '/strategies/$strategyId/$step': typeof StrategiesStrategyIdStepRoute
 }
 export interface FileRoutesById {
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/unfollow/loading': typeof UnfollowLoadingRoute
   '/unfollow/success': typeof UnfollowSuccessRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/strategies/': typeof StrategiesIndexRoute
   '/strategies/$strategyId/$step': typeof StrategiesStrategyIdStepRoute
 }
 export interface FileRouteTypes {
@@ -311,6 +320,7 @@ export interface FileRouteTypes {
     | '/unfollow/loading'
     | '/unfollow/success'
     | '/dashboard/'
+    | '/strategies/'
     | '/strategies/$strategyId/$step'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/unfollow/loading'
     | '/unfollow/success'
     | '/dashboard'
+    | '/strategies'
     | '/strategies/$strategyId/$step'
   id:
     | '__root__'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/unfollow/loading'
     | '/unfollow/success'
     | '/dashboard/'
+    | '/strategies/'
     | '/strategies/$strategyId/$step'
   fileRoutesById: FileRoutesById
 }
@@ -393,6 +405,7 @@ export interface RootRouteChildren {
   UnfollowInformationRoute: typeof UnfollowInformationRoute
   UnfollowLoadingRoute: typeof UnfollowLoadingRoute
   UnfollowSuccessRoute: typeof UnfollowSuccessRoute
+  StrategiesIndexRoute: typeof StrategiesIndexRoute
   StrategiesStrategyIdStepRoute: typeof StrategiesStrategyIdStepRoute
 }
 
@@ -452,6 +465,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/strategies/': {
+      id: '/strategies/'
+      path: '/strategies'
+      fullPath: '/strategies/'
+      preLoaderRoute: typeof StrategiesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -663,6 +683,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnfollowInformationRoute: UnfollowInformationRoute,
   UnfollowLoadingRoute: UnfollowLoadingRoute,
   UnfollowSuccessRoute: UnfollowSuccessRoute,
+  StrategiesIndexRoute: StrategiesIndexRoute,
   StrategiesStrategyIdStepRoute: StrategiesStrategyIdStepRoute,
 }
 export const routeTree = rootRouteImport
