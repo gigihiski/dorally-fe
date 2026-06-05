@@ -12,4 +12,9 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  // Deploy target for our own builds (Vercel). Inside the Lovable sandbox this
+  // is ignored — the config forces the `cloudflare-module` preset there — so this
+  // only takes effect for local/CI `vite build`, emitting Vercel's Build Output
+  // API bundle under `.vercel/output`.
+  nitro: { preset: "vercel" },
 });
