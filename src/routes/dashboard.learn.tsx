@@ -27,8 +27,23 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+const GUIDE_SLUGS: Record<string, number> = {
+  "how-following-works": 0,
+  "understanding-fees": 1,
+  "risk-basics": 2,
+  "how-to-choose": 3,
+  "portfolio-tracking": 4,
+  "stopping-a-strategy": 5,
+};
+
+type LearnSearch = { guide?: string };
+
 export const Route = createFileRoute("/dashboard/learn")({
   component: DashboardLearnPage,
+  validateSearch: (raw: Record<string, unknown>): LearnSearch => ({
+    guide:
+      typeof raw.guide === "string" && raw.guide in GUIDE_SLUGS ? raw.guide : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Learn — Batman" },
@@ -484,7 +499,10 @@ const FAQS: Array<{ q: string; a: string }> = [
 ];
 
 function DashboardLearnPage() {
-  const [openGuide, setOpenGuide] = useState<number | null>(null);
+  const { guide: guideSlug } = Route.useSearch();
+  const [openGuide, setOpenGuide] = useState<number | null>(
+    guideSlug ? (GUIDE_SLUGS[guideSlug] ?? null) : null,
+  );
   const activeGuide = openGuide !== null ? GUIDES[openGuide] : null;
   const totalGuides = GUIDES.length;
 

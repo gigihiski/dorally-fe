@@ -10,6 +10,7 @@ import {
 
 import appCss from "../styles.css?url";
 import { SessionExpiredModal } from "@/components/SessionExpiredModal";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 function NotFoundComponent() {
   return (
@@ -148,8 +149,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <SessionExpiredModal />
+      <TooltipProvider delayDuration={150}>
+        <Outlet />
+        <SessionExpiredModal />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

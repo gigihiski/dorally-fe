@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -18,13 +18,46 @@ import {
   AlertTriangle,
   Lightbulb,
   ChevronRight,
+  Filter,
 } from "lucide-react";
 import { getMoneyManagers, type MoneyManager } from "@/services/money-managers";
 import { DashboardHeader } from "./dashboard";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
+type StrategiesSearch = {
+  sort?: SortKey;
+  style?: StyleKey;
+  drawdown?: DrawdownKey;
+};
+
+const SORT_KEYS = new Set<SortKey>([
+  "popular",
+  "highest_return",
+  "smallest_drop",
+  "most_followers",
+  "newest",
+  "min_lowest",
+  "min_highest",
+]);
+const STYLE_KEYS = new Set<StyleKey>(["all", "stable", "balanced", "growth"]);
+const DRAWDOWN_KEYS = new Set<DrawdownKey>(["all", "under2", "under5", "under10"]);
+
 export const Route = createFileRoute("/dashboard/strategies")({
   component: DashboardStrategiesPage,
+  validateSearch: (raw: Record<string, unknown>): StrategiesSearch => ({
+    sort:
+      typeof raw.sort === "string" && SORT_KEYS.has(raw.sort as SortKey)
+        ? (raw.sort as SortKey)
+        : undefined,
+    style:
+      typeof raw.style === "string" && STYLE_KEYS.has(raw.style as StyleKey)
+        ? (raw.style as StyleKey)
+        : undefined,
+    drawdown:
+      typeof raw.drawdown === "string" && DRAWDOWN_KEYS.has(raw.drawdown as DrawdownKey)
+        ? (raw.drawdown as DrawdownKey)
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Explore Strategies — Batman" },
@@ -34,13 +67,6 @@ export const Route = createFileRoute("/dashboard/strategies")({
 });
 
 type StyleKey = "all" | "stable" | "balanced" | "growth";
-
-const STYLE_TO_CATEGORIES: Record<StyleKey, string[] | null> = {
-  all: null,
-  stable: ["Stable", "Low Drawdown"],
-  balanced: ["Stable", "New"],
-  growth: ["Growth"],
-};
 
 type SortKey =
   | "popular"
@@ -101,10 +127,32 @@ type Row = {
   owner: string | null;
   thisMonth: number | null;
   largestDrop: number | null;
+  totalReturn: number | null;
+  winRate: number | null;
   followers: number | null;
   minimumStart: number | null;
   category: string | null;
   createdAt?: string;
+};
+
+type DerivedStyle = "stable" | "balanced" | "growth" | null;
+function deriveStyle(row: Row): DerivedStyle {
+  if (row.largestDrop === null) return null;
+  const dropAbs = Math.abs(row.largestDrop);
+  if (dropAbs < 5) return "stable";
+  if (dropAbs < 10) return "balanced";
+  return "growth";
+}
+
+const SORT_COMPARATORS: Partial<Record<SortKey, (a: Row, b: Row) => number>> = {
+  highest_return: (a, b) => (b.totalReturn ?? -Infinity) - (a.totalReturn ?? -Infinity),
+  smallest_drop: (a, b) =>
+    Math.abs(a.largestDrop ?? -Infinity) - Math.abs(b.largestDrop ?? -Infinity),
+  most_followers: (a, b) => (b.followers ?? -Infinity) - (a.followers ?? -Infinity),
+  newest: (a, b) =>
+    (b.createdAt ? Date.parse(b.createdAt) : 0) - (a.createdAt ? Date.parse(a.createdAt) : 0),
+  min_lowest: (a, b) => (a.minimumStart ?? Infinity) - (b.minimumStart ?? Infinity),
+  min_highest: (a, b) => (b.minimumStart ?? -Infinity) - (a.minimumStart ?? -Infinity),
 };
 
 function adaptMoneyManager(mm: MoneyManager): Row {
@@ -128,6 +176,14 @@ function adaptMoneyManager(mm: MoneyManager): Row {
       typeof mm.performance?.biggest_drop_pct === "number"
         ? -Number(mm.performance.biggest_drop_pct.toFixed(1))
         : null,
+    totalReturn:
+      typeof mm.performance?.total_return_pct === "number"
+        ? Number(mm.performance.total_return_pct.toFixed(1))
+        : null,
+    winRate:
+      typeof mm.performance?.winning_rate_pct === "number"
+        ? Number(mm.performance.winning_rate_pct.toFixed(1))
+        : null,
     followers: typeof mm.followers_count === "number" ? mm.followers_count : null,
     minimumStart:
       typeof mm.profile?.minimum_start === "number" ? mm.profile.minimum_start : null,
@@ -140,9 +196,46 @@ const DASH = "—";
 const display = (v: number | string | null | undefined, suffix = ""): string =>
   v === null || v === undefined || v === "" ? DASH : `${v}${suffix}`;
 
+const SORT_LABEL_FRAGMENTS: Record<SortKey, string> = {
+  popular: "",
+  highest_return: "Top Money Managers — sorted by highest return",
+  smallest_drop: "Sorted by smallest drop",
+  most_followers: "Sorted by most followers",
+  newest: "Sorted by newest",
+  min_lowest: "Sorted by lowest minimum start",
+  min_highest: "Sorted by highest minimum start",
+};
+const STYLE_LABEL_FRAGMENTS: Record<StyleKey, string> = {
+  all: "",
+  stable: "More Stable strategies",
+  balanced: "Balanced Growth strategies",
+  growth: "Higher Growth strategies",
+};
+const DRAWDOWN_LABEL_FRAGMENTS: Record<DrawdownKey, string> = {
+  all: "",
+  under2: "Drawdown under 2%",
+  under5: "Low Drawdown — under 5%",
+  under10: "Drawdown under 10%",
+};
+
+function getActiveFilterLabel(
+  sort: SortKey,
+  style: StyleKey,
+  drawdown: DrawdownKey,
+): string | null {
+  const fragments = [
+    SORT_LABEL_FRAGMENTS[sort],
+    STYLE_LABEL_FRAGMENTS[style],
+    DRAWDOWN_LABEL_FRAGMENTS[drawdown],
+  ].filter(Boolean);
+  return fragments.length === 0 ? null : fragments.join(" · ");
+}
+
 function DashboardStrategiesPage() {
+  const { sort: sortParam, style: styleParam, drawdown: drawdownParam } = Route.useSearch();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [style, setStyle] = useState<StyleKey>("all");
+  const [style, setStyle] = useState<StyleKey>(styleParam ?? "all");
   const [showAll, setShowAll] = useState(false);
 
   // Sheets
@@ -150,19 +243,19 @@ function DashboardStrategiesPage() {
   const [sortOpen, setSortOpen] = useState(false);
   const [drawdownOpen, setDrawdownOpen] = useState(false);
 
-  // Filter state (working / applied)
-  const [filterStyle, setFilterStyle] = useState<"stable" | "balanced" | "growth" | null>("balanced");
-  const [filterGrowth, setFilterGrowth] = useState<"2" | "5" | "10" | null>("5");
-  const [filterMin, setFilterMin] = useState<"10" | "50" | "100" | null>("10");
-  const [filterTrack, setFilterTrack] = useState<"new" | "6m" | "1y" | "2y" | null>("1y");
-  const [filterFollowers, setFilterFollowers] = useState<"100" | "200" | "500" | "750" | null>("100");
+  // Filter state (working / applied) — null = filter off
+  const [filterStyle, setFilterStyle] = useState<"stable" | "balanced" | "growth" | null>(null);
+  const [filterGrowth, setFilterGrowth] = useState<"2" | "5" | "10" | null>(null);
+  const [filterMin, setFilterMin] = useState<"10" | "50" | "100" | null>(null);
+  const [filterTrack, setFilterTrack] = useState<"new" | "6m" | "1y" | "2y" | null>(null);
+  const [filterFollowers, setFilterFollowers] = useState<"100" | "200" | "500" | "750" | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Sort
-  const [sort, setSort] = useState<SortKey>("popular");
+  const [sort, setSort] = useState<SortKey>(sortParam ?? "popular");
 
   // Drawdown
-  const [drawdown, setDrawdown] = useState<DrawdownKey>("all");
+  const [drawdown, setDrawdown] = useState<DrawdownKey>(drawdownParam ?? "all");
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["money-managers", { page: 1, limit: 50 }],
@@ -176,27 +269,70 @@ function DashboardStrategiesPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const cats = STYLE_TO_CATEGORIES[style];
-    const list = rows.filter((s) => {
-      // Style picker: only filter rows where category is KNOWN.
-      // Rows with null category pass through ("—" stays visible to users).
-      if (cats && s.category && !cats.includes(s.category)) return false;
-      if (!q) return true;
-      return (
-        s.name.toLowerCase().includes(q) ||
-        (s.username ? s.username.toLowerCase().includes(q) : false)
-      );
+    let list = rows.filter((s) => {
+      // Search
+      if (q) {
+        const inName = s.name.toLowerCase().includes(q);
+        const inUser = s.username?.toLowerCase().includes(q) ?? false;
+        if (!inName && !inUser) return false;
+      }
+      // Style picker (top of page) — null-permissive on rows with unknown drop
+      if (style !== "all") {
+        const ds = deriveStyle(s);
+        if (ds && ds !== style) return false;
+      }
+      // Drawdown chip
+      if (drawdown !== "all" && s.largestDrop !== null) {
+        const dropAbs = Math.abs(s.largestDrop);
+        const limit = drawdown === "under2" ? 2 : drawdown === "under5" ? 5 : 10;
+        if (dropAbs >= limit) return false;
+      }
+      // Filter sheet — style override
+      if (filterStyle) {
+        const ds = deriveStyle(s);
+        if (ds && ds !== filterStyle) return false;
+      }
+      // Filter sheet — growth threshold (this-month return ≥ X)
+      if (filterGrowth && s.thisMonth !== null) {
+        if (s.thisMonth < Number(filterGrowth)) return false;
+      }
+      // Filter sheet — minimum start ($10 = ≤10, $50+ = ≥50, $100+ = ≥100)
+      if (filterMin && s.minimumStart !== null) {
+        if (filterMin === "10" ? s.minimumStart > 10 : s.minimumStart < Number(filterMin)) {
+          return false;
+        }
+      }
+      // Filter sheet — track record (account age vs created_at)
+      if (filterTrack && s.createdAt) {
+        const ageDays = (Date.now() - Date.parse(s.createdAt)) / 86400000;
+        if (filterTrack === "new") {
+          if (ageDays > 30) return false;
+        } else {
+          const need = filterTrack === "6m" ? 180 : filterTrack === "1y" ? 365 : 730;
+          if (ageDays < need) return false;
+        }
+      }
+      // Filter sheet — followers
+      if (filterFollowers && s.followers !== null) {
+        if (s.followers < Number(filterFollowers)) return false;
+      }
+      return true;
     });
-    if (sort === "newest") {
-      return [...list].sort((a, b) => {
-        const ta = a.createdAt ? Date.parse(a.createdAt) : 0;
-        const tb = b.createdAt ? Date.parse(b.createdAt) : 0;
-        return tb - ta;
-      });
-    }
-    // Other sort options have no data yet — keep API order.
+    const cmp = SORT_COMPARATORS[sort];
+    if (cmp) list = [...list].sort(cmp);
     return list;
-  }, [rows, query, style, sort]);
+  }, [
+    rows,
+    query,
+    style,
+    drawdown,
+    filterStyle,
+    filterGrowth,
+    filterMin,
+    filterTrack,
+    filterFollowers,
+    sort,
+  ]);
 
   const visible = showAll ? filtered : filtered.slice(0, 3);
 
@@ -274,14 +410,8 @@ function DashboardStrategiesPage() {
           </button>
         </div>
 
-        {/* Period row */}
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2 text-gray-500">
-            <span>Performance period</span>
-            <button className="inline-flex items-center gap-1 font-semibold text-gray-900 bg-white border border-gray-200 rounded-md px-3 py-1">
-              This month <ChevronDown className="w-3 h-3" />
-            </button>
-          </div>
+        {/* Drawdown row */}
+        <div className="flex items-center justify-end text-sm">
           <button
             onClick={() => setDrawdownOpen(true)}
             className="inline-flex items-center gap-1 text-gray-700 bg-white border border-gray-200 rounded-md px-3 py-1 font-semibold"
@@ -291,6 +421,35 @@ function DashboardStrategiesPage() {
             <ChevronDown className="w-3 h-3" />
           </button>
         </div>
+
+        {/* Active filter banner */}
+        {(() => {
+          const activeLabel = getActiveFilterLabel(sort, style, drawdown);
+          if (!activeLabel) return null;
+          const handleClear = () => {
+            setSort("popular");
+            setStyle("all");
+            setDrawdown("all");
+            navigate({ to: "/dashboard/strategies", search: {}, replace: true });
+          };
+          return (
+            <div className="flex items-center justify-between gap-3 bg-[#EEF4FF] border border-[#DBEAFE] rounded-xl px-4 py-3">
+              <p className="text-sm text-[#1E3A8A] flex items-center gap-2 min-w-0">
+                <Filter className="w-4 h-4 shrink-0" />
+                <span className="truncate">
+                  <span className="font-semibold">Active filter:</span> {activeLabel}
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={handleClear}
+                className="text-xs font-semibold text-[#2563EB] hover:underline shrink-0"
+              >
+                Clear
+              </button>
+            </div>
+          );
+        })()}
 
         {/* List */}
         <div className="space-y-4">
@@ -340,10 +499,10 @@ function DashboardStrategiesPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-1">Learn</h2>
           <p className="text-sm text-gray-500 mb-4">New to strategy following? Start here.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <LearnCard icon={<BookOpen className="w-5 h-5 text-[#2563EB]" />} title="How strategy following works" desc="Learn what it means to follow a strategy." />
-            <LearnCard icon={<HelpCircle className="w-5 h-5 text-[#2563EB]" />} title="Understanding fees" desc="How profit sharing and fee charging works." />
-            <LearnCard icon={<AlertTriangle className="w-5 h-5 text-[#2563EB]" />} title="Risk basics before following" desc="What to expect before you start." />
-            <LearnCard icon={<Lightbulb className="w-5 h-5 text-[#2563EB]" />} title="How to choose a strategy" desc="Tips for picking the right strategy for you." />
+            <LearnCard icon={<BookOpen className="w-5 h-5 text-[#2563EB]" />} title="How strategy following works" desc="Learn what it means to follow a strategy." slug="how-following-works" />
+            <LearnCard icon={<HelpCircle className="w-5 h-5 text-[#2563EB]" />} title="Understanding fees" desc="How profit sharing and fee charging works." slug="understanding-fees" />
+            <LearnCard icon={<AlertTriangle className="w-5 h-5 text-[#2563EB]" />} title="Risk basics before following" desc="What to expect before you start." slug="risk-basics" />
+            <LearnCard icon={<Lightbulb className="w-5 h-5 text-[#2563EB]" />} title="How to choose a strategy" desc="Tips for picking the right strategy for you." slug="how-to-choose" />
           </div>
         </section>
       </main>
@@ -664,15 +823,29 @@ function StrategyRow({ s }: { s: Row }) {
   );
 }
 
-function LearnCard({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+function LearnCard({
+  icon,
+  title,
+  desc,
+  slug,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  slug: string;
+}) {
   return (
-    <button className="bg-white border border-gray-200 rounded-xl p-4 text-left flex items-start gap-3 hover:border-[#2563EB] transition-colors">
+    <Link
+      to="/dashboard/learn"
+      search={{ guide: slug }}
+      className="bg-white border border-gray-200 rounded-xl p-4 text-left flex items-start gap-3 hover:border-[#2563EB] transition-colors"
+    >
       <div className="w-9 h-9 rounded-lg bg-[#EEF4FF] flex items-center justify-center flex-shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-900 text-sm mb-0.5">{title}</p>
         <p className="text-xs text-gray-500">{desc}</p>
       </div>
       <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
-    </button>
+    </Link>
   );
 }

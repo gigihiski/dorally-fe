@@ -6,6 +6,7 @@ import { getMoneyManagers, type MoneyManager } from "@/services/money-managers";
 import { clearAuthSession, getBatmanUser, isAuthenticated } from "@/lib/auth-token";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationsPopover } from "@/components/NotificationsPopover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Search,
   Trophy,
@@ -13,6 +14,7 @@ import {
   BookOpen,
   CheckCircle2,
   AlertCircle,
+  Info,
   Lock,
   ArrowRight,
   Wallet,
@@ -25,6 +27,28 @@ import {
   Bookmark,
   LogOut,
 } from "lucide-react";
+
+const STAT_HINTS: Record<string, string> = {
+  "THIS MONTH": "Return earned by this strategy so far in the current calendar month.",
+  "LARGEST DROP": "Biggest decline from a recent peak (max drawdown). Smaller is better.",
+  "ACCOUNT VALUE": "Total value of this account, including any open positions.",
+};
+
+function StatLabel({ label }: { label: string }) {
+  const hint = STAT_HINTS[label];
+  if (!hint) return <>{label}</>;
+  return (
+    <span className="inline-flex items-center justify-center gap-1">
+      {label}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="w-3 h-3 text-gray-400 cursor-help" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[220px] text-xs">{hint}</TooltipContent>
+      </Tooltip>
+    </span>
+  );
+}
 
 const AVATAR_PALETTE = ["#2563EB", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#0EA5E9"];
 
@@ -402,16 +426,6 @@ function PortfolioHero({ state }: { state: DashboardState }) {
 /* ============================= GETTING STARTED ============================= */
 
 function GettingStartedCard({ state }: { state: Exclude<DashboardState, "followed"> }) {
-  const navigate = useNavigate();
-  const onPrimary = () => {
-    if (state === "not-connected") {
-      navigate({ to: "/onboarding/$step", params: { step: "select" } });
-    } else if (state === "need-verify") {
-      navigate({ to: "/onboarding/$step", params: { step: "verifying-document" } });
-    } else {
-      navigate({ to: "/dashboard/strategies" });
-    }
-  };
   const config = {
     "not-connected": {
       eyebrow: "GETTING STARTED",
@@ -453,10 +467,7 @@ function GettingStartedCard({ state }: { state: Exclude<DashboardState, "followe
       <h2 className="text-2xl font-bold text-gray-900 mb-2">{config.title}</h2>
       <p className="text-sm text-gray-500 mb-6 max-w-3xl">{config.body}</p>
       <div className="flex gap-3">
-        <button
-          onClick={onPrimary}
-          className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
-        >
+        <button className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90">
           {config.primary}
         </button>
         <Link
@@ -542,53 +553,89 @@ function SetupProgress({ step }: { step: 1 | 2 | 3 }) {
 
 /* ============================= EXPLORE BATMAN ============================= */
 
+type ExploreKind = "browse" | "top-mm" | "low-drawdown" | "how-it-works";
+type ExploreItem = {
+  icon: typeof Search;
+  title: string;
+  sub: string;
+  kind: ExploreKind;
+};
+
+const EXPLORE_ITEMS: ExploreItem[] = [
+  { icon: Search, title: "Browse Strategies", sub: "Find a strategy to follow", kind: "browse" },
+  { icon: Trophy, title: "Top Money Managers", sub: "Highest performing strategies", kind: "top-mm" },
+  { icon: ShieldCheck, title: "Low Drawdown", sub: "Safer, steadier strategies", kind: "low-drawdown" },
+  { icon: BookOpen, title: "How It Works", sub: "Learn before you start", kind: "how-it-works" },
+];
+
+const CARD_CLASS =
+  "bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 hover:shadow-sm text-left transition-shadow";
+
+function ExploreCardInner({ item }: { item: ExploreItem }) {
+  const Icon = item.icon;
+  return (
+    <>
+      <div className="w-10 h-10 rounded-lg bg-[#EEF2FF] flex items-center justify-center shrink-0">
+        <Icon className="w-5 h-5 text-[#2563EB]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-gray-900 truncate">{item.title}</p>
+        <p className="text-xs text-gray-500 truncate">{item.sub}</p>
+      </div>
+      <ArrowRight className="w-4 h-4 text-gray-400 shrink-0" />
+    </>
+  );
+}
+
+function ExploreCard({ item }: { item: ExploreItem }) {
+  switch (item.kind) {
+    case "browse":
+      return (
+        <Link to="/dashboard/strategies" className={CARD_CLASS}>
+          <ExploreCardInner item={item} />
+        </Link>
+      );
+    case "top-mm":
+      return (
+        <Link
+          to="/dashboard/strategies"
+          search={{ sort: "highest_return" }}
+          className={CARD_CLASS}
+        >
+          <ExploreCardInner item={item} />
+        </Link>
+      );
+    case "low-drawdown":
+      return (
+        <Link
+          to="/dashboard/strategies"
+          search={{ drawdown: "under5" }}
+          className={CARD_CLASS}
+        >
+          <ExploreCardInner item={item} />
+        </Link>
+      );
+    case "how-it-works":
+      return (
+        <Link
+          to="/dashboard/learn"
+          search={{ guide: "how-following-works" }}
+          className={CARD_CLASS}
+        >
+          <ExploreCardInner item={item} />
+        </Link>
+      );
+  }
+}
+
 function ExploreBatman() {
-  const items: Array<{
-    icon: typeof Search;
-    title: string;
-    sub: string;
-    to?: "/dashboard/strategies";
-  }> = [
-    {
-      icon: Search,
-      title: "Browse Strategies",
-      sub: "Find a strategy to follow",
-      to: "/dashboard/strategies",
-    },
-    { icon: Trophy, title: "Top Money Managers", sub: "Highest performing strategies" },
-    { icon: ShieldCheck, title: "Low Drawdown", sub: "Safer, steadier strategies" },
-    { icon: BookOpen, title: "How It Works", sub: "Learn before you start" },
-  ];
   return (
     <section>
       <h2 className="text-lg font-bold text-gray-900 mb-4">Explore Batman</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {items.map((it) => {
-          const Icon = it.icon;
-          const className =
-            "bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 hover:shadow-sm text-left transition-shadow";
-          const inner = (
-            <>
-              <div className="w-10 h-10 rounded-lg bg-[#EEF2FF] flex items-center justify-center shrink-0">
-                <Icon className="w-5 h-5 text-[#2563EB]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-900 truncate">{it.title}</p>
-                <p className="text-xs text-gray-500 truncate">{it.sub}</p>
-              </div>
-              <ArrowRight className="w-4 h-4 text-gray-400 shrink-0" />
-            </>
-          );
-          return it.to ? (
-            <Link key={it.title} to={it.to} className={className}>
-              {inner}
-            </Link>
-          ) : (
-            <button key={it.title} className={className}>
-              {inner}
-            </button>
-          );
-        })}
+        {EXPLORE_ITEMS.map((it) => (
+          <ExploreCard key={it.title} item={it} />
+        ))}
       </div>
     </section>
   );
@@ -641,7 +688,9 @@ function PortfolioPreview() {
 function Stat({ label, value, valueClass }: { label: string; value: string; valueClass: string }) {
   return (
     <div className="text-center">
-      <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-1">{label}</p>
+      <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-1">
+        <StatLabel label={label} />
+      </p>
       <p className={`text-lg font-bold ${valueClass}`}>{value}</p>
     </div>
   );
@@ -809,7 +858,7 @@ function PopularStrategies({ state }: { state: DashboardState }) {
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                   <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-0.5">
-                    THIS MONTH
+                    <StatLabel label="THIS MONTH" />
                   </p>
                   <p className="text-sm font-bold text-[#10B981]">
                     {s.thisMonth == null ? "—" : `+${s.thisMonth}%`}
@@ -817,7 +866,7 @@ function PopularStrategies({ state }: { state: DashboardState }) {
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-0.5">
-                    LARGEST DROP
+                    <StatLabel label="LARGEST DROP" />
                   </p>
                   <p className="text-sm font-bold text-[#EF4444]">
                     {s.largestDrop == null ? "—" : `${s.largestDrop}%`}
@@ -875,7 +924,7 @@ function PopularStrategies({ state }: { state: DashboardState }) {
               </Link>
               <div className="col-span-3">
                 <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-0.5">
-                  THIS MONTH
+                  <StatLabel label="THIS MONTH" />
                 </p>
                 <p className="text-sm font-bold text-[#10B981]">
                   {s.thisMonth == null ? "—" : `+${s.thisMonth}%`}
@@ -883,7 +932,7 @@ function PopularStrategies({ state }: { state: DashboardState }) {
               </div>
               <div className="col-span-3">
                 <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-0.5">
-                  LARGEST DROP
+                  <StatLabel label="LARGEST DROP" />
                 </p>
                 <p className="text-sm font-bold text-[#EF4444]">
                   {s.largestDrop == null ? "—" : `${s.largestDrop}%`}
@@ -915,11 +964,16 @@ function PopularStrategies({ state }: { state: DashboardState }) {
 
 /* ============================= LEARN ============================= */
 
-const learnItems = [
-  { icon: UserCheck, title: "How strategy following works", sub: "Learn what it means to follow a strategy." },
-  { icon: ClipboardList, title: "Understanding fees", sub: "How profit sharing and fee charging works." },
-  { icon: ShieldCheck, title: "Risk basics before following", sub: "What to expect before you start." },
-  { icon: HelpCircle, title: "How to choose a strategy", sub: "Tips for picking the right strategy for you." },
+const learnItems: Array<{
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  sub: string;
+  slug: string;
+}> = [
+  { icon: UserCheck, title: "How strategy following works", sub: "Learn what it means to follow a strategy.", slug: "how-following-works" },
+  { icon: ClipboardList, title: "Understanding fees", sub: "How profit sharing and fee charging works.", slug: "understanding-fees" },
+  { icon: ShieldCheck, title: "Risk basics before following", sub: "What to expect before you start.", slug: "risk-basics" },
+  { icon: HelpCircle, title: "How to choose a strategy", sub: "Tips for picking the right strategy for you.", slug: "how-to-choose" },
 ];
 
 function LearnGrid() {
@@ -954,13 +1008,19 @@ function LearnCard({
   icon: Icon,
   title,
   sub,
+  slug,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   sub: string;
+  slug: string;
 }) {
   return (
-    <button className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 text-left hover:shadow-sm w-full">
+    <Link
+      to="/dashboard/learn"
+      search={{ guide: slug }}
+      className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 text-left hover:shadow-sm w-full"
+    >
       <div className="w-10 h-10 rounded-lg bg-[#EEF2FF] flex items-center justify-center shrink-0">
         <Icon className="w-5 h-5 text-[#2563EB]" />
       </div>
@@ -969,7 +1029,7 @@ function LearnCard({
         <p className="text-xs text-gray-500">{sub}</p>
       </div>
       <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
-    </button>
+    </Link>
   );
 }
 

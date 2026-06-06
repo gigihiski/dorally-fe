@@ -140,15 +140,16 @@ function DashboardPortfolioPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-4">Understanding your portfolio</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { icon: BarChart3, title: "How portfolio tracking works", body: "What you see in your portfolio and how it's calculated." },
-              { icon: FileText, title: "Fees explained", body: "How strategy fees work and when they're charged." },
-              { icon: ShieldCheck, title: "Risk basics", body: "What to expect when following a strategy." },
+              { icon: BarChart3, title: "How portfolio tracking works", body: "What you see in your portfolio and how it's calculated.", slug: "portfolio-tracking" },
+              { icon: FileText, title: "Fees explained", body: "How strategy fees work and when they're charged.", slug: "understanding-fees" },
+              { icon: ShieldCheck, title: "Risk basics", body: "What to expect when following a strategy.", slug: "risk-basics" },
             ].map((c) => {
               const Icon = c.icon;
               return (
                 <Link
                   key={c.title}
                   to="/dashboard/learn"
+                  search={{ guide: c.slug }}
                   className="bg-white border border-gray-200 rounded-xl p-5 flex items-start gap-3 hover:shadow-sm"
                 >
                   <div className="w-10 h-10 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0">

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, AlertCircle, Clock } from "lucide-react";
 import { DashboardHeader } from "./dashboard";
 import { getMyProfile } from "@/services/users";
-import { getPcxLinkStatus } from "@/services/integrations";
+import { getPcxLinkStatus, getPcxProfile } from "@/services/integrations";
 import { clearAuthSession } from "@/lib/auth-token";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -91,8 +91,24 @@ function AccountPage() {
     staleTime: 30_000,
   });
 
-  const docState = deriveDocState(pcx?.linked, pcx?.kyc_approved);
   const linked = Boolean(pcx?.linked);
+
+  // Live KYC from PCX itself, not Batman's cached `pcx.kyc_approved` which can
+  // lag behind the broker. Only fetch when the account is actually linked.
+  const { data: pcxProfile, isLoading: pcxProfileLoading } = useQuery({
+    queryKey: ["pcx-profile"],
+    queryFn: getPcxProfile,
+    enabled: linked,
+    retry: false,
+    staleTime: 30_000,
+  });
+
+  // Prefer the live PCX value; fall back to the cached status field if profile
+  // didn't load.
+  const kycApproved =
+    pcxProfile?.kyc_approved !== undefined ? pcxProfile.kyc_approved : pcx?.kyc_approved;
+  const docState = deriveDocState(pcx?.linked, kycApproved);
+  const docLoading = pcxLoading || (linked && pcxProfileLoading);
   const brokerName = pcx?.provider === "pcx" ? "PrimeCodex" : pcx?.provider || DASH;
 
   const handleSessionPurge = async () => {
@@ -220,7 +236,7 @@ function AccountPage() {
           <Row
             label="Status"
             value={
-              pcxLoading ? (
+              docLoading ? (
                 <span className="text-gray-400">…</span>
               ) : docState === "complete" ? (
                 <Pill tone="green">Verified</Pill>
@@ -232,7 +248,7 @@ function AccountPage() {
             }
             last
           />
-          {!pcxLoading && (
+          {!docLoading && (
             <div className="px-6 pb-6">
               <DocAlert state={docState} />
             </div>

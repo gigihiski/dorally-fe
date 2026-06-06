@@ -303,7 +303,7 @@ function StrategyDetailView({
                   ))}
                 </div>
               </div>
-              <PerformanceChart />
+              <PerformanceChart range={range} />
               <p className="text-xs text-gray-400 mt-4">
                 Past performance is for reference only and does not guarantee future results.
               </p>
@@ -471,14 +471,17 @@ function StrategyDetailView({
                 <LearnLink
                   icon={<PlayCircle className="w-5 h-5 text-[#2563EB]" />}
                   label="How following works"
+                  slug="how-following-works"
                 />
                 <LearnLink
                   icon={<DollarSign className="w-5 h-5 text-[#2563EB]" />}
                   label="Fees explained"
+                  slug="understanding-fees"
                 />
                 <LearnLink
                   icon={<ShieldCheck className="w-5 h-5 text-[#2563EB]" />}
                   label="Risk basics"
+                  slug="risk-basics"
                 />
               </ul>
             </section>
@@ -548,18 +551,75 @@ function Row({
   );
 }
 
-function LearnLink({ icon, label }: { icon: React.ReactNode; label: string }) {
+function LearnLink({
+  icon,
+  label,
+  slug,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  slug: string;
+}) {
   return (
-    <li className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-full bg-[#EEF4FF] flex items-center justify-center">
-        {icon}
-      </div>
-      <span className="font-semibold text-[#2563EB] text-sm">{label}</span>
+    <li>
+      <Link
+        to="/dashboard/learn"
+        search={{ guide: slug }}
+        className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+      >
+        <div className="w-9 h-9 rounded-full bg-[#EEF4FF] flex items-center justify-center">
+          {icon}
+        </div>
+        <span className="font-semibold text-[#2563EB] text-sm">{label}</span>
+      </Link>
     </li>
   );
 }
 
-function PerformanceChart() {
+type ChartSeries = { points: number[]; labels: string[] };
+
+const PERF_SERIES: Record<Range, ChartSeries> = {
+  "1M": {
+    points: [100, 100.4, 100.1, 100.7, 101.3, 101.0, 101.8, 102.4, 102.1, 102.9, 103.2, 103.6],
+    labels: ["MAY 6", "MAY 13", "MAY 20", "MAY 27", "JUN 3"],
+  },
+  "3M": {
+    points: [98, 99.2, 100, 99.5, 100.8, 102, 101.5, 102.7, 101.9, 103.2, 104.1, 103.6],
+    labels: ["APR", "MAY", "JUN"],
+  },
+  "6M": {
+    points: [95, 96.8, 98.4, 97.5, 99.1, 100.6, 99.8, 101.4, 103.0, 102.4, 104.2, 103.6],
+    labels: ["JAN", "FEB", "MAR", "APR", "MAY", "JUN"],
+  },
+  All: {
+    points: [88, 91.4, 93.1, 90.7, 95.2, 97.6, 96.5, 100.1, 102.4, 99.8, 103.2, 103.6],
+    labels: ["2025", "Q2", "Q3", "Q4", "2026", "NOW"],
+  },
+};
+
+function PerformanceChart({ range }: { range: Range }) {
+  const series = PERF_SERIES[range];
+  const { points, labels } = series;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const pad = Math.max((max - min) * 0.15, 0.5);
+  const yMin = min - pad;
+  const yMax = max + pad;
+  const yRange = yMax - yMin;
+  const width = 600;
+  const height = 200;
+  const xStep = width / (points.length - 1);
+  const coords = points.map((v, i) => ({
+    x: i * xStep,
+    y: height - ((v - yMin) / yRange) * height,
+  }));
+  const linePath = coords
+    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(" ");
+  const areaPath = `${linePath} L${width},${height} L0,${height} Z`;
+
+  const yTicks = [yMax, yMax - yRange / 3, yMin + yRange / 3, yMin].map((v) => v.toFixed(1));
+
   return (
     <div className="relative">
       <div className="flex">
@@ -567,10 +627,9 @@ function PerformanceChart() {
           className="flex flex-col justify-between text-[10px] text-gray-400 pr-2 py-1"
           style={{ height: 200 }}
         >
-          <span>104%</span>
-          <span>102%</span>
-          <span>100%</span>
-          <span>98%</span>
+          {yTicks.map((t, i) => (
+            <span key={i}>{t}%</span>
+          ))}
         </div>
         <svg viewBox="0 0 600 200" className="flex-1 h-[200px]" preserveAspectRatio="none">
           <defs>
@@ -582,25 +641,21 @@ function PerformanceChart() {
           {[0, 66, 132, 198].map((y) => (
             <line key={y} x1="0" x2="600" y1={y} y2={y} stroke="#F1F5F9" strokeWidth="1" />
           ))}
+          <path d={areaPath} fill="url(#perfGrad)" />
           <path
-            d="M0,110 C60,100 100,90 150,95 C200,100 240,120 290,115 C340,110 380,80 440,70 C500,60 560,40 600,30 L600,200 L0,200 Z"
-            fill="url(#perfGrad)"
-          />
-          <path
-            d="M0,110 C60,100 100,90 150,95 C200,100 240,120 290,115 C340,110 380,80 440,70 C500,60 560,40 600,30"
+            d={linePath}
             fill="none"
             stroke="#2563EB"
             strokeWidth="2.5"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
       </div>
       <div className="flex justify-between text-[10px] font-semibold tracking-wider text-gray-400 mt-2 pl-10">
-        <span>JAN 14</span>
-        <span>JAN 22</span>
-        <span>JAN 30</span>
-        <span>FEB 7</span>
-        <span>FEB 14</span>
+        {labels.map((l, i) => (
+          <span key={i}>{l}</span>
+        ))}
       </div>
     </div>
   );
