@@ -7,7 +7,7 @@ import { clearAuthSession, getBatmanUser, isAuthenticated } from "@/lib/auth-tok
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationsPopover } from "@/components/NotificationsPopover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { LearnGuideProvider, useLearnGuide } from "@/components/learn/LearnGuideProvider";
+import { useLearnGuide } from "@/components/learn/LearnGuideProvider";
 import { useFollowedStrategies } from "@/lib/useFollowedStrategies";
 import {
   Search,
@@ -72,11 +72,7 @@ function getAvatarBg(seed: string): string {
 }
 
 export const Route = createFileRoute("/dashboard")({
-  component: () => (
-    <LearnGuideProvider>
-      <Outlet />
-    </LearnGuideProvider>
-  ),
+  component: () => <Outlet />,
 });
 
 export type DashboardState = "not-connected" | "need-verify" | "need-following" | "followed";

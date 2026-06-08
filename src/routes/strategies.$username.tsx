@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Bookmark, BookmarkCheck, Info, PlayCircle, DollarSign, ShieldCheck } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Bookmark, BookmarkCheck, Info, PlayCircle, DollarSign, ShieldCheck } from "lucide-react";
 import { getMoneyManagerByUsername, type MoneyManager } from "@/services/money-managers";
 import { saveMoneyManager, unsaveMoneyManager } from "@/services/saved-money-managers";
 import { toggleFollow } from "@/services/follows";
 import { useFollowedStrategies } from "@/lib/useFollowedStrategies";
+import { useLearnGuide } from "@/components/learn/LearnGuideProvider";
 import { ApiError } from "@/lib/api";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DashboardHeader } from "./dashboard";
@@ -208,6 +209,7 @@ function StrategyDetailView({
     (s) => s.id === usernameOrId || s.moneyManagerId === mm.id,
   );
   const isFollowing = Boolean(followedEntry);
+  const [showStopModal, setShowStopModal] = useState(false);
   const unfollowMutation = useMutation({
     mutationFn: async () => {
       if (!followedEntry) return;
@@ -218,6 +220,7 @@ function StrategyDetailView({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["followees-me", "active"] });
+      setShowStopModal(false);
     },
   });
 
@@ -470,11 +473,10 @@ function StrategyDetailView({
               {isFollowing ? (
                 <button
                   type="button"
-                  onClick={() => unfollowMutation.mutate()}
-                  disabled={unfollowMutation.isPending}
-                  className="w-full block text-center border-2 border-[#EF4444] text-[#EF4444] font-semibold py-3.5 rounded-xl hover:bg-[#FEF2F2] transition-colors mb-3 disabled:opacity-60"
+                  onClick={() => setShowStopModal(true)}
+                  className="w-full block text-center border-2 border-[#EF4444] text-[#EF4444] font-semibold py-3.5 rounded-xl hover:bg-[#FEF2F2] transition-colors mb-3"
                 >
-                  {unfollowMutation.isPending ? "Unfollowing…" : "Unfollow Strategy"}
+                  Unfollow Strategy
                 </button>
               ) : (
                 <Link
@@ -550,6 +552,58 @@ function StrategyDetailView({
           </div>
         </div>
       </main>
+
+      {showStopModal && followedEntry && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[480px] p-8">
+            <div className="w-12 h-12 rounded-full bg-[#EEF4FF] flex items-center justify-center mb-6">
+              <AlertTriangle className="w-6 h-6 text-[#2563EB]" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Stop following this strategy?</h2>
+            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+              Your account will stop following this strategy. Any open positions will be closed at
+              market price, and any applicable strategy fee will be settled.
+            </p>
+            <div className="border border-gray-200 rounded-xl p-4 flex items-center gap-3 mb-4">
+              <div
+                className="w-11 h-11 rounded-full font-semibold text-xs flex items-center justify-center shrink-0"
+                style={{ backgroundColor: followedEntry.avatarBg, color: followedEntry.avatarFg }}
+              >
+                {followedEntry.initials}
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-gray-900">{followedEntry.name}</p>
+                <p className="text-xs text-gray-500">
+                  Account #{followedEntry.accountId} • Managed by {followedEntry.owner}
+                </p>
+              </div>
+            </div>
+            <div className="bg-[#EEF4FF] rounded-xl p-4 flex items-start gap-3 mb-8">
+              <Info className="w-5 h-5 text-[#2563EB] shrink-0 mt-0.5" />
+              <p className="text-sm text-[#2563EB] leading-relaxed">
+                After this is complete, the account can be used to follow another strategy.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setShowStopModal(false)}
+                className="border border-gray-200 text-[#2563EB] font-semibold py-3.5 rounded-xl text-center hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => unfollowMutation.mutate()}
+                disabled={unfollowMutation.isPending}
+                className="bg-[#2563EB] text-white font-semibold py-3.5 rounded-xl text-center hover:bg-[#1d4ed8] transition-colors disabled:opacity-60"
+              >
+                {unfollowMutation.isPending ? "Stopping…" : "Stop Following"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -644,18 +698,19 @@ function LearnLink({
   label: string;
   slug: string;
 }) {
+  const { openGuideBySlug } = useLearnGuide();
   return (
     <li>
-      <Link
-        to="/dashboard/learn"
-        search={{ guide: slug }}
-        className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+      <button
+        type="button"
+        onClick={() => openGuideBySlug(slug)}
+        className="flex items-center gap-3 hover:opacity-80 transition-opacity w-full text-left"
       >
         <div className="w-9 h-9 rounded-full bg-[#EEF4FF] flex items-center justify-center">
           {icon}
         </div>
         <span className="font-semibold text-[#2563EB] text-sm">{label}</span>
-      </Link>
+      </button>
     </li>
   );
 }

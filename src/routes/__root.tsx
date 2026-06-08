@@ -11,6 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import { SessionExpiredModal } from "@/components/SessionExpiredModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { LearnGuideProvider } from "@/components/learn/LearnGuideProvider";
 
 function NotFoundComponent() {
   return (
@@ -150,8 +151,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={150}>
-        <Outlet />
-        <SessionExpiredModal />
+        <LearnGuideProvider>
+          <Outlet />
+          <SessionExpiredModal />
+        </LearnGuideProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
