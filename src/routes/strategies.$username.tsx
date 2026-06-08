@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, AlertTriangle, Bookmark, BookmarkCheck, Info, PlayCircle, DollarSign, ShieldCheck } from "lucide-react";
@@ -209,6 +209,7 @@ function StrategyDetailView({
     (s) => s.id === usernameOrId || s.moneyManagerId === mm.id,
   );
   const isFollowing = Boolean(followedEntry);
+  const navigate = useNavigate();
   const [showStopModal, setShowStopModal] = useState(false);
   const unfollowMutation = useMutation({
     mutationFn: async () => {
@@ -221,6 +222,8 @@ function StrategyDetailView({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["followees-me", "active"] });
       setShowStopModal(false);
+      // Go to the "Stopping strategy following" -> "Strategy following stopped" flow.
+      navigate({ to: "/unfollow/loading" });
     },
   });
 

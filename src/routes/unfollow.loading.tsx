@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Check, Clock, X } from "lucide-react";
 
 export const Route = createFileRoute("/unfollow/loading")({
@@ -21,6 +22,13 @@ const steps: { label: string; state: StepState }[] = [
 ];
 
 function LoadingModal() {
+  const navigate = useNavigate();
+  // Auto-advance from "Stopping…" to the "Strategy following stopped" success popup.
+  useEffect(() => {
+    const t = setTimeout(() => navigate({ to: "/unfollow/success" }), 2400);
+    return () => clearTimeout(t);
+  }, [navigate]);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[480px] p-8 relative">
