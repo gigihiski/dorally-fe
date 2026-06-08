@@ -374,7 +374,12 @@ function NavBtn({ label, active, to }: { label: string; active?: boolean; to?: s
 /* ============================= HERO ============================= */
 
 function PortfolioHero({ state }: { state: DashboardState }) {
+  const { strategies } = useFollowedStrategies();
   if (state === "followed") {
+    const fmtMoney = (n: number) =>
+      `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const totalValue = strategies.reduce((sum, s) => sum + s.accountValue, 0) + 5000;
+    const todaysChange = Number((totalValue * 0.0078).toFixed(2));
     return (
       <section className="rounded-2xl bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white px-8 py-7 grid grid-cols-3 gap-6 items-end shadow-sm">
         <div>
@@ -382,15 +387,17 @@ function PortfolioHero({ state }: { state: DashboardState }) {
             YOUR PORTFOLIO
           </p>
           <p className="text-xs text-white/70 mb-1">Total Account Value</p>
-          <p className="text-4xl font-bold">$10,842.40</p>
+          <p className="text-4xl font-bold">{fmtMoney(totalValue)}</p>
         </div>
         <div>
           <p className="text-xs text-white/70 mb-1">Today's Change</p>
-          <p className="text-2xl font-bold text-[#34D399]">+$84.20</p>
+          <p className="text-2xl font-bold text-[#34D399]">+{fmtMoney(todaysChange)}</p>
         </div>
         <div className="text-right">
           <p className="text-xs text-white/70 mb-1">Following</p>
-          <p className="text-2xl font-bold">1 strategy</p>
+          <p className="text-2xl font-bold">
+            {strategies.length} {strategies.length === 1 ? "strategy" : "strategies"}
+          </p>
         </div>
       </section>
     );
@@ -647,7 +654,7 @@ function ExploreBatman() {
   );
 }
 
-/* ============================= PORTFOLIO PREVIEW (state 1.4) ============================= */
+/* ============================= PORTFOLIO REVIEW (state 1.4) ============================= */
 
 function PortfolioPreview() {
   const { strategies } = useFollowedStrategies();
@@ -658,17 +665,12 @@ function PortfolioPreview() {
     `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return (
     <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold text-gray-900">Portfolio Preview</h2>
-        <Link
-          to="/dashboard/portfolio"
-          className="text-sm font-semibold text-[#2563EB] flex items-center gap-1"
-        >
-          View Portfolio <ArrowRight className="w-4 h-4" />
-        </Link>
+      <div className="mb-2">
+        <h2 className="text-lg font-bold text-gray-900">Portfolio Review</h2>
+        <p className="text-sm text-gray-500">Your followed strategies will appear here.</p>
       </div>
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-full font-semibold flex items-center justify-center text-sm"
@@ -681,29 +683,17 @@ function PortfolioPreview() {
               <p className="text-xs text-gray-500">Money Manager: {s.owner}</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Link
-              to="/dashboard/portfolio"
-              className="bg-[#2563EB] text-white text-sm font-semibold px-4 py-1.5 rounded-md"
-            >
-              Manage
-            </Link>
-            <Link
-              to="/dashboard/portfolio"
-              className="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-1.5 rounded-md"
-            >
-              View
-            </Link>
-          </div>
+          <Link
+            to="/strategies/$username"
+            params={{ username: s.id }}
+            className="border border-gray-300 text-gray-700 text-sm font-semibold px-5 py-1.5 rounded-md hover:bg-gray-50"
+          >
+            View
+          </Link>
         </div>
-        <div className="flex items-center justify-between gap-2 flex-wrap bg-[#F8FAFC] rounded-lg px-4 py-2 text-xs text-gray-600 mb-4">
-          <span>
-            <span className="font-semibold text-gray-800">Followed with:</span> Account #
-            {s.accountId} (PrimeCodex)
-          </span>
-          <span className="inline-flex items-center gap-1 text-[#10B981] font-semibold">
-            <ShieldCheck className="w-3.5 h-3.5" /> Automated Safeguard · Active
-          </span>
+        <div className="bg-[#F8FAFC] rounded-lg px-4 py-2 text-xs text-gray-600 mb-4">
+          <span className="font-semibold text-gray-800">Followed with:</span> Account #{s.accountId}{" "}
+          (PrimeCodex)
         </div>
         <div className="grid grid-cols-3 gap-4 pt-2 border-t border-gray-100">
           <Stat label="THIS MONTH" value={fmtPct(s.thisMonth)} valueClass="text-[#10B981]" />
@@ -1006,7 +996,7 @@ const learnItems: Array<{
   { icon: HelpCircle, title: "How to choose a strategy", sub: "Tips for picking the right strategy for you.", slug: "how-to-choose" },
 ];
 
-function LearnGrid() {
+export function LearnGrid() {
   return (
     <section>
       <h2 className="text-lg font-bold text-gray-900">Learn</h2>

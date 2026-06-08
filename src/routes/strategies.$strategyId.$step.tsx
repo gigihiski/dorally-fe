@@ -826,8 +826,10 @@ function Step3({
   accountId?: string;
 }) {
   const navigate = useNavigate();
-  const [on, setOn] = useState(safeguards ?? false);
-  const [lossPct, setLossPct] = useState(loss ?? 30);
+  // Automated Safeguards is a fixed, always-on platform rule: copying stops if the
+  // account drops 30% from its high-water mark. No user toggle (see image spec).
+  const on = true;
+  const lossPct = 30;
   const { data: step3Accounts = [] } = useMyAccountsQuery();
   const step3Account = accountId ? step3Accounts.find((a) => a.id === accountId) : undefined;
   const equity =
@@ -927,109 +929,41 @@ function Step3({
             </p>
           </div>
 
-          <div
-            className={`rounded-2xl p-5 ${on ? "bg-[#1E3A8A] text-white" : "border border-gray-200 bg-white"}`}
-          >
-            <div className="flex items-center justify-between mb-4">
+          <div className="rounded-2xl p-5 bg-[#1E3A8A] text-white">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className={`font-bold ${on ? "text-white" : "text-gray-900"}`}>
-                  Automated Safeguards
-                </p>
-                <p className={`text-sm ${on ? "text-blue-100" : "text-gray-500"}`}>
-                  Apply your protection settings automatically.
+                <p className="font-bold text-lg text-white">Automated Safeguards</p>
+                <p className="text-sm text-blue-100 mt-1 max-w-xl">
+                  If your account value drops {lossPct}% from its highest value, we will automatically
+                  stop copying new trades.
                 </p>
               </div>
-              <Toggle on={on} onChange={setOn} />
+              <span className="inline-flex items-center gap-1 font-semibold text-white whitespace-nowrap">
+                Active <Check className="w-4 h-4" strokeWidth={3} />
+              </span>
             </div>
-            {on && (
-              <div className="pt-4 border-t border-blue-700">
-                <div className="flex items-center gap-3 mb-3">
-                  <Shield className="w-5 h-5 text-blue-200" />
-                  <div className="flex-1">
-                    <p className="font-bold text-white">Maximum Loss Limit</p>
-                    <p className="text-sm text-blue-100">
-                      Choose the maximum percentage of loss you're willing to allow.
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg px-3 py-2 flex items-center gap-1">
-                    <input
-                      type="number"
-                      value={lossPct}
-                      onChange={(e) =>
-                        setLossPct(Math.max(1, Math.min(100, parseInt(e.target.value) || 0)))
-                      }
-                      className="w-12 text-gray-900 font-bold text-center outline-none"
-                    />
-                    <span className="text-gray-500 font-bold">%</span>
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={lossPct}
-                  onChange={(e) => setLossPct(parseInt(e.target.value))}
-                  className="w-full accent-white"
-                />
-                <div className="flex justify-between text-xs text-blue-100 mt-1">
-                  <span>0%</span>
-                  <span>Use the slider or enter an exact percentage.</span>
-                  <span>100%</span>
-                </div>
-              </div>
-            )}
           </div>
 
-          {!on ? (
-            <>
-              <div className="border border-gray-200 rounded-xl p-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-[#2563EB]" />
-                  <div>
-                    <p className="font-bold text-gray-900 text-sm">
-                      Copying will continue without a protection limit.
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      No automatic stop-below-equity protection will apply.
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded">
-                  NO MAXIMUM LOSS
-                </span>
+          <div className="border border-gray-200 rounded-xl p-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5 text-[#2563EB]" />
+              <div>
+                <p className="text-xs text-gray-500">Copying stops below equity</p>
+                <p className="text-2xl font-bold text-gray-900">${stopBelow.toLocaleString()}.00</p>
+                <p className="text-xs text-gray-500">
+                  Based on your current equity of ${equity.toLocaleString()}.00.
+                </p>
               </div>
-              <div className="bg-[#F0F4FF] rounded-xl p-4 flex gap-3 text-sm text-gray-700">
-                <Info className="w-5 h-5 text-[#2563EB] flex-shrink-0" />
-                You can continue without safeguards. Keep in mind, no automatic stop-below-equity
-                protection will apply.
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="border border-gray-200 rounded-xl p-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-[#2563EB]" />
-                  <div>
-                    <p className="text-xs text-gray-500">Copying stops below equity</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      ${stopBelow.toLocaleString()}.00
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Based on your current equity of ${equity.toLocaleString()}.00.
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-[#2563EB] border border-[#2563EB] px-3 py-1.5 rounded">
-                  {lossPct}% MAXIMUM LOSS
-                </span>
-              </div>
-              <div className="bg-[#F0F4FF] rounded-xl p-4 flex gap-3 text-sm text-gray-700">
-                <Info className="w-5 h-5 text-[#2563EB] flex-shrink-0" />
-                If your equity falls to ${stopBelow.toLocaleString()}.00 ({lossPct}% loss), copying
-                will stop automatically.
-              </div>
-            </>
-          )}
+            </div>
+            <span className="text-xs font-bold text-[#2563EB] border border-[#2563EB] px-3 py-1.5 rounded">
+              {lossPct}% MAXIMUM LOSS
+            </span>
+          </div>
+          <div className="bg-[#F0F4FF] rounded-xl p-4 flex gap-3 text-sm text-gray-700">
+            <Info className="w-5 h-5 text-[#2563EB] flex-shrink-0" />
+            If your equity falls to ${stopBelow.toLocaleString()}.00 ({lossPct}% loss), copying will
+            stop automatically.
+          </div>
 
           <div className="bg-[#F8FAFC] rounded-xl p-4 flex gap-3 text-sm text-gray-700">
             <Shield className="w-5 h-5 text-[#2563EB] flex-shrink-0 mt-0.5" />

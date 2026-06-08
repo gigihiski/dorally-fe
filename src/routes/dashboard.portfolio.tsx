@@ -1,8 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
-  AlertTriangle,
   CheckCircle2,
   Info,
   BarChart3,
@@ -10,10 +8,9 @@ import {
   ShieldCheck,
   ChevronRight,
 } from "lucide-react";
-import { DashboardHeader } from "./dashboard";
+import { DashboardHeader, LearnGrid } from "./dashboard";
 import { getPcxLinkStatus } from "@/services/integrations";
-import { toggleFollow } from "@/services/follows";
-import { useFollowedStrategies, type FollowedStrategy } from "@/lib/useFollowedStrategies";
+import { useFollowedStrategies } from "@/lib/useFollowedStrategies";
 import { useLearnGuide } from "@/components/learn/LearnGuideProvider";
 
 export const Route = createFileRoute("/dashboard/portfolio")({
@@ -29,13 +26,13 @@ export const Route = createFileRoute("/dashboard/portfolio")({
   }),
 });
 
+const AVAILABLE_ACCOUNT_VALUE = 5000;
+
 const fmtPct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
 const fmtMoney = (n: number) =>
   `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 function DashboardPortfolioPage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { openGuideBySlug } = useLearnGuide();
 
   const { data: status } = useQuery({
@@ -47,43 +44,53 @@ function DashboardPortfolioPage() {
   const verified = status?.kyc_approved === true;
 
   const { strategies } = useFollowedStrategies();
-  const [stopTarget, setStopTarget] = useState<FollowedStrategy | null>(null);
+  const hasStrategies = strategies.length > 0;
 
-  const handleStopConfirm = async () => {
-    if (!stopTarget) return;
-    try {
-      // Deactivate the follow in the mock store, then run the existing unfollow flow.
-      await toggleFollow({
-        money_manager_id: stopTarget.moneyManagerId,
-        investor_account_id: stopTarget.accountId,
-      });
-    } catch {
-      /* demo: ignore mock errors */
-    }
-    await queryClient.invalidateQueries({ queryKey: ["followees-me", "active"] });
-    setStopTarget(null);
-    navigate({ to: "/unfollow/loading" });
-  };
+  const followedValue = strategies.reduce((sum, s) => sum + s.accountValue, 0);
+  const totalValue = followedValue + (verified ? AVAILABLE_ACCOUNT_VALUE : 0);
+  const todaysChange = Number((totalValue * 0.0078).toFixed(2));
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <DashboardHeader connected={verified} />
       <main className="max-w-5xl mx-auto px-6 py-10 space-y-8">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Portfolio</h1>
-            <p className="text-sm text-gray-500">
-              Your followed strategies and account progress.
-            </p>
+        {/* Portfolio summary banner */}
+        {hasStrategies ? (
+          <section className="rounded-2xl bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white px-8 py-7 grid grid-cols-1 sm:grid-cols-3 gap-6 items-end shadow-sm">
+            <div>
+              <p className="text-[11px] font-semibold tracking-wider text-white/70 mb-2">
+                YOUR PORTFOLIO
+              </p>
+              <p className="text-xs text-white/70 mb-1">Total Account Value</p>
+              <p className="text-4xl font-bold">{fmtMoney(totalValue)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/70 mb-1">Today's Change</p>
+              <p className="text-2xl font-bold text-[#34D399]">+{fmtMoney(todaysChange)}</p>
+            </div>
+            <div className="sm:text-right">
+              <p className="text-xs text-white/70 mb-1">Following</p>
+              <p className="text-2xl font-bold">
+                {strategies.length} {strategies.length === 1 ? "strategy" : "strategies"}
+              </p>
+            </div>
+          </section>
+        ) : (
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-1">Portfolio</h1>
+              <p className="text-sm text-gray-500">
+                Your followed strategies and account progress.
+              </p>
+            </div>
+            <Link
+              to="/dashboard/strategies"
+              className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
+            >
+              Explore Strategies
+            </Link>
           </div>
-          <Link
-            to="/dashboard/strategies"
-            className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
-          >
-            Explore Strategies
-          </Link>
-        </div>
+        )}
 
         {/* Doc verification needed */}
         {!verified && (
@@ -102,7 +109,7 @@ function DashboardPortfolioPage() {
         )}
 
         {/* Followed strategies */}
-        {strategies.length > 0 ? (
+        {hasStrategies ? (
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-1">Your Portfolio</h2>
             <p className="text-sm text-gray-500 mb-4">Strategies you are currently following.</p>
@@ -122,13 +129,13 @@ function DashboardPortfolioPage() {
                         <p className="text-xs text-gray-500">Money Manager: {s.owner}</p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setStopTarget(s)}
-                      className="border border-[#EF4444] text-[#EF4444] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#FEF2F2]"
+                    <Link
+                      to="/strategies/$username"
+                      params={{ username: s.id }}
+                      className="border border-gray-300 text-gray-700 text-sm font-semibold px-5 py-2 rounded-lg hover:bg-gray-50"
                     >
-                      Stop Following
-                    </button>
+                      View
+                    </Link>
                   </div>
                   <div className="flex items-center justify-between gap-2 flex-wrap bg-[#F8FAFC] rounded-lg px-4 py-2 text-xs text-gray-600 mb-4">
                     <span>
@@ -167,6 +174,9 @@ function DashboardPortfolioPage() {
             </Link>
           </section>
         )}
+
+        {/* Learn (image 2) */}
+        {hasStrategies && <LearnGrid />}
 
         {/* Accounts (only when verified) */}
         {verified && (
@@ -247,14 +257,6 @@ function DashboardPortfolioPage() {
           </div>
         </section>
       </main>
-
-      {stopTarget && (
-        <StopFollowingModal
-          strategy={stopTarget}
-          onCancel={() => setStopTarget(null)}
-          onConfirm={handleStopConfirm}
-        />
-      )}
     </div>
   );
 }
@@ -272,72 +274,6 @@ function PortfolioStat({
     <div>
       <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-1">{label}</p>
       <p className={`text-lg font-bold ${valueClass}`}>{value}</p>
-    </div>
-  );
-}
-
-/** In-place confirmation popup for stopping a strategy (mirrors /unfollow/confirmation). */
-function StopFollowingModal({
-  strategy,
-  onCancel,
-  onConfirm,
-}: {
-  strategy: FollowedStrategy;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[480px] p-8">
-        <div className="w-12 h-12 rounded-full bg-[#EEF4FF] flex items-center justify-center mb-6">
-          <AlertTriangle className="w-6 h-6 text-[#2563EB]" />
-        </div>
-
-        <h2 className="text-2xl font-bold text-gray-900 mb-3">Stop following this strategy?</h2>
-        <p className="text-sm text-gray-500 leading-relaxed mb-6">
-          Your account will stop following this strategy. Any open positions will be closed at market
-          price, and any applicable strategy fee will be settled.
-        </p>
-
-        <div className="border border-gray-200 rounded-xl p-4 flex items-center gap-3 mb-4">
-          <div
-            className="w-11 h-11 rounded-full font-semibold text-xs flex items-center justify-center shrink-0"
-            style={{ backgroundColor: strategy.avatarBg, color: strategy.avatarFg }}
-          >
-            {strategy.initials}
-          </div>
-          <div className="min-w-0">
-            <p className="font-bold text-gray-900">{strategy.name}</p>
-            <p className="text-xs text-gray-500">
-              Account #{strategy.accountId} • Managed by {strategy.owner}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-[#EEF4FF] rounded-xl p-4 flex items-start gap-3 mb-8">
-          <Info className="w-5 h-5 text-[#2563EB] shrink-0 mt-0.5" />
-          <p className="text-sm text-[#2563EB] leading-relaxed">
-            After this is complete, the account can be used to follow another strategy.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="border border-gray-200 text-[#2563EB] font-semibold py-3.5 rounded-xl text-center hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="bg-[#2563EB] text-white font-semibold py-3.5 rounded-xl text-center hover:bg-[#1d4ed8] transition-colors"
-          >
-            Stop Following
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

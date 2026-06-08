@@ -86,8 +86,10 @@ function freshDB(): MockDB {
     risk: {},
   };
 
-  // Optional jump-to-state for screenshots / demos.
-  const hint = readDemoStateHint();
+  // Demo seed: default to a fully-onboarded "followed" state (verified account +
+  // one active follow) so /dashboard and /portfolio are populated out of the box.
+  // Override via localStorage "demo_state" (e.g. "not-connected") to demo the flow.
+  const hint = readDemoStateHint() ?? "followed";
   if (hint === "need-verify" || hint === "need-following" || hint === "followed") {
     next.pcxStatus.linked = true;
     next.pcxStatus.linked_at = new Date().toISOString();

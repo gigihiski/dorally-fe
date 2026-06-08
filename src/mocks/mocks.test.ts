@@ -9,7 +9,12 @@ import { buildMoneyManagers } from "./fixtures";
  * not-connected → need-verify → need-following → followed, plus save/unsave.
  */
 describe("mock layer demo flows", () => {
-  beforeEach(() => resetStore());
+  // These flows assert the progression from a fresh not-connected state. The app
+  // itself now defaults the demo seed to "followed", so pin the start explicitly.
+  beforeEach(() => {
+    window.localStorage.setItem("demo_state", "not-connected");
+    resetStore();
+  });
 
   it("login returns a fake token", async () => {
     const res = await handleMock("/users/auth/login", {
