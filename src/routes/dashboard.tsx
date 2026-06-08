@@ -7,6 +7,8 @@ import { clearAuthSession, getBatmanUser, isAuthenticated } from "@/lib/auth-tok
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationsPopover } from "@/components/NotificationsPopover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { LearnGuideProvider, useLearnGuide } from "@/components/learn/LearnGuideProvider";
+import { useFollowedStrategies } from "@/lib/useFollowedStrategies";
 import {
   Search,
   Trophy,
@@ -70,7 +72,11 @@ function getAvatarBg(seed: string): string {
 }
 
 export const Route = createFileRoute("/dashboard")({
-  component: () => <Outlet />,
+  component: () => (
+    <LearnGuideProvider>
+      <Outlet />
+    </LearnGuideProvider>
+  ),
 });
 
 export type DashboardState = "not-connected" | "need-verify" | "need-following" | "followed";
@@ -644,41 +650,65 @@ function ExploreBatman() {
 /* ============================= PORTFOLIO PREVIEW (state 1.4) ============================= */
 
 function PortfolioPreview() {
+  const { strategies } = useFollowedStrategies();
+  const s = strategies[0];
+  if (!s) return null;
+  const fmtPct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+  const fmtMoney = (n: number) =>
+    `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-bold text-gray-900">Portfolio Preview</h2>
-        <button className="text-sm font-semibold text-[#2563EB] flex items-center gap-1">
+        <Link
+          to="/dashboard/portfolio"
+          className="text-sm font-semibold text-[#2563EB] flex items-center gap-1"
+        >
           View Portfolio <ArrowRight className="w-4 h-4" />
-        </button>
+        </Link>
       </div>
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#DBEAFE] text-[#2563EB] font-semibold flex items-center justify-center text-sm">
-              AK
+            <div
+              className="w-10 h-10 rounded-full font-semibold flex items-center justify-center text-sm"
+              style={{ backgroundColor: s.avatarBg, color: s.avatarFg }}
+            >
+              {s.initials}
             </div>
             <div>
-              <p className="font-semibold text-gray-900">Consistent Strategy</p>
-              <p className="text-xs text-gray-500">Money Manager: Alex K.</p>
+              <p className="font-semibold text-gray-900">{s.name}</p>
+              <p className="text-xs text-gray-500">Money Manager: {s.owner}</p>
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="bg-[#2563EB] text-white text-sm font-semibold px-4 py-1.5 rounded-md">
+            <Link
+              to="/dashboard/portfolio"
+              className="bg-[#2563EB] text-white text-sm font-semibold px-4 py-1.5 rounded-md"
+            >
               Manage
-            </button>
-            <button className="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-1.5 rounded-md">
+            </Link>
+            <Link
+              to="/dashboard/portfolio"
+              className="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-1.5 rounded-md"
+            >
               View
-            </button>
+            </Link>
           </div>
         </div>
-        <div className="bg-[#F8FAFC] rounded-lg px-4 py-2 text-xs text-gray-600 mb-4">
-          <span className="font-semibold text-gray-800">Followed with:</span> Account #123456 (PrimeCodex)
+        <div className="flex items-center justify-between gap-2 flex-wrap bg-[#F8FAFC] rounded-lg px-4 py-2 text-xs text-gray-600 mb-4">
+          <span>
+            <span className="font-semibold text-gray-800">Followed with:</span> Account #
+            {s.accountId} (PrimeCodex)
+          </span>
+          <span className="inline-flex items-center gap-1 text-[#10B981] font-semibold">
+            <ShieldCheck className="w-3.5 h-3.5" /> Automated Safeguard · Active
+          </span>
         </div>
         <div className="grid grid-cols-3 gap-4 pt-2 border-t border-gray-100">
-          <Stat label="THIS MONTH" value="+4.2%" valueClass="text-[#10B981]" />
-          <Stat label="LARGEST DROP" value="-1.8%" valueClass="text-[#EF4444]" />
-          <Stat label="ACCOUNT VALUE" value="$5,842.40" valueClass="text-gray-900" />
+          <Stat label="THIS MONTH" value={fmtPct(s.thisMonth)} valueClass="text-[#10B981]" />
+          <Stat label="LARGEST DROP" value={fmtPct(s.largestDrop)} valueClass="text-[#EF4444]" />
+          <Stat label="ACCOUNT VALUE" value={fmtMoney(s.accountValue)} valueClass="text-gray-900" />
         </div>
       </div>
     </section>
@@ -1015,10 +1045,11 @@ function LearnCard({
   sub: string;
   slug: string;
 }) {
+  const { openGuideBySlug } = useLearnGuide();
   return (
-    <Link
-      to="/dashboard/learn"
-      search={{ guide: slug }}
+    <button
+      type="button"
+      onClick={() => openGuideBySlug(slug)}
       className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 text-left hover:shadow-sm w-full"
     >
       <div className="w-10 h-10 rounded-lg bg-[#EEF2FF] flex items-center justify-center shrink-0">
@@ -1029,7 +1060,7 @@ function LearnCard({
         <p className="text-xs text-gray-500">{sub}</p>
       </div>
       <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
-    </Link>
+    </button>
   );
 }
 

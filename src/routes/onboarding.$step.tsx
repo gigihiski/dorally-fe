@@ -102,7 +102,7 @@ function OnboardingStep() {
   };
 
   const handleClose = () => {
-    navigate({ to: "/dashboard/strategies" });
+    navigate({ to: "/dashboard" });
   };
 
   return (

@@ -1028,13 +1028,14 @@ export function PlatformModal({
                 </div>
 
                 {allVerified ? (
-                  <a
-                    href="/strategies"
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/dashboard" })}
                     className="w-full block text-center py-4 rounded-xl text-white font-semibold tracking-wider transition-colors hover:opacity-90"
                     style={{ backgroundColor: "#2563EB" }}
                   >
                     Explore Strategies
-                  </a>
+                  </button>
                 ) : (
                   <>
                     <div className="flex gap-3">

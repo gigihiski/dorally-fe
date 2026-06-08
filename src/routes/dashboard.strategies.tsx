@@ -23,6 +23,7 @@ import {
 import { getMoneyManagers, type MoneyManager } from "@/services/money-managers";
 import { DashboardHeader } from "./dashboard";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useLearnGuide } from "@/components/learn/LearnGuideProvider";
 
 type StrategiesSearch = {
   sort?: SortKey;
@@ -834,11 +835,12 @@ function LearnCard({
   desc: string;
   slug: string;
 }) {
+  const { openGuideBySlug } = useLearnGuide();
   return (
-    <Link
-      to="/dashboard/learn"
-      search={{ guide: slug }}
-      className="bg-white border border-gray-200 rounded-xl p-4 text-left flex items-start gap-3 hover:border-[#2563EB] transition-colors"
+    <button
+      type="button"
+      onClick={() => openGuideBySlug(slug)}
+      className="bg-white border border-gray-200 rounded-xl p-4 text-left flex items-start gap-3 hover:border-[#2563EB] transition-colors w-full"
     >
       <div className="w-9 h-9 rounded-lg bg-[#EEF4FF] flex items-center justify-center flex-shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
@@ -846,6 +848,6 @@ function LearnCard({
         <p className="text-xs text-gray-500">{desc}</p>
       </div>
       <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
-    </Link>
+    </button>
   );
 }

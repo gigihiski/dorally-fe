@@ -1200,7 +1200,7 @@ function Step4({
           ← Back
         </Link>
         <Link
-          to="/dashboard/strategies"
+          to="/dashboard/portfolio"
           className="flex-1 py-4 rounded-xl text-white text-sm font-semibold text-center hover:opacity-90"
           style={{ backgroundColor: "#2563EB" }}
         >
