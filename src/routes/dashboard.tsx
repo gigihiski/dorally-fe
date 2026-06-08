@@ -82,12 +82,16 @@ export const Route = createFileRoute("/dashboard")({
 export type DashboardState = "not-connected" | "need-verify" | "need-following" | "followed";
 
 export function DashboardView({ state }: { state: DashboardState }) {
+  // Even when already following, present the verified "Ready to Start" header —
+  // hero + setup-progress card with Document verification checked (image spec).
+  const headerState: Exclude<DashboardState, "followed"> =
+    state === "followed" ? "need-following" : state;
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <Header state={state} />
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-        <PortfolioHero state={state} />
-        {state !== "followed" && <GettingStartedCard state={state} />}
+        <PortfolioHero state={headerState} />
+        <GettingStartedCard state={headerState} />
         <ExploreBatman />
         {state === "need-following" && <PortfolioReviewEmpty />}
         {state === "followed" && <PortfolioPreview />}

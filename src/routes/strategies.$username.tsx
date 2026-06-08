@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bookmark, BookmarkCheck, Info, PlayCircle, DollarSign, ShieldCheck } from "lucide-react";
 import { getMoneyManagerByUsername, type MoneyManager } from "@/services/money-managers";
 import { saveMoneyManager, unsaveMoneyManager } from "@/services/saved-money-managers";
+import { toggleFollow } from "@/services/follows";
+import { useFollowedStrategies } from "@/lib/useFollowedStrategies";
 import { ApiError } from "@/lib/api";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DashboardHeader } from "./dashboard";
@@ -199,6 +201,25 @@ function StrategyDetailView({
   });
   const isSaved = mm.is_saved === true;
   const canSave = Boolean(mmAccountId);
+
+  // Is the user already following this strategy? If so, swap Follow -> Unfollow.
+  const { strategies: followedStrategies } = useFollowedStrategies();
+  const followedEntry = followedStrategies.find(
+    (s) => s.id === usernameOrId || s.moneyManagerId === mm.id,
+  );
+  const isFollowing = Boolean(followedEntry);
+  const unfollowMutation = useMutation({
+    mutationFn: async () => {
+      if (!followedEntry) return;
+      await toggleFollow({
+        money_manager_id: followedEntry.moneyManagerId,
+        investor_account_id: followedEntry.accountId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["followees-me", "active"] });
+    },
+  });
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -446,13 +467,24 @@ function StrategyDetailView({
                   hint="You can stop following this strategy at any time."
                 />
               </div>
-              <Link
-                to="/strategies/$strategyId/$step"
-                params={{ strategyId: usernameOrId, step: "step-1" }}
-                className="w-full block text-center bg-[#2563EB] text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity mb-3"
-              >
-                Follow Strategy
-              </Link>
+              {isFollowing ? (
+                <button
+                  type="button"
+                  onClick={() => unfollowMutation.mutate()}
+                  disabled={unfollowMutation.isPending}
+                  className="w-full block text-center border-2 border-[#EF4444] text-[#EF4444] font-semibold py-3.5 rounded-xl hover:bg-[#FEF2F2] transition-colors mb-3 disabled:opacity-60"
+                >
+                  {unfollowMutation.isPending ? "Unfollowing…" : "Unfollow Strategy"}
+                </button>
+              ) : (
+                <Link
+                  to="/strategies/$strategyId/$step"
+                  params={{ strategyId: usernameOrId, step: "step-1" }}
+                  className="w-full block text-center bg-[#2563EB] text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity mb-3"
+                >
+                  Follow Strategy
+                </Link>
+              )}
               <button
                 onClick={() => savedMutation.mutate(!isSaved)}
                 disabled={!canSave || savedMutation.isPending}
