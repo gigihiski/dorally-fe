@@ -1,13 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  CheckCircle2,
-  Info,
-  BarChart3,
-  FileText,
-  ShieldCheck,
-  ChevronRight,
-} from "lucide-react";
+import { BarChart3, FileText, ShieldCheck, ChevronRight } from "lucide-react";
 import { DashboardHeader, LearnGrid } from "./dashboard";
 import { getPcxLinkStatus } from "@/services/integrations";
 import { useFollowedStrategies } from "@/lib/useFollowedStrategies";
@@ -177,54 +170,6 @@ function DashboardPortfolioPage() {
 
         {/* Learn (image 2) */}
         {hasStrategies && <LearnGrid />}
-
-        {/* Accounts (only when verified) */}
-        {verified && (
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Accounts for Following</h2>
-            <p className="text-sm text-gray-500 mb-4">Each account can follow one strategy at a time.</p>
-            <div className="space-y-3">
-              {[{ id: "789012" }].map((a) => (
-                <article
-                  key={a.id}
-                  className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 flex-wrap"
-                >
-                  <div className="w-10 h-10 rounded-full border-2 border-[#DBEAFE] flex items-center justify-center text-[#2563EB] shrink-0">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <p className="text-sm font-bold text-gray-900">Account #{a.id} Available</p>
-                    <p className="text-xs text-gray-500">PrimeCodex · Ready to follow a strategy</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">$5,000.00</p>
-                    <p className="text-[10px] font-semibold tracking-wider text-gray-400">AVAILABLE</p>
-                  </div>
-                  <div className="flex items-center gap-4 ml-auto">
-                    <button className="text-xs font-semibold text-[#2563EB] hover:underline">
-                      Add Funds
-                    </button>
-                    <span className="text-gray-300">|</span>
-                    <button className="text-xs font-semibold text-[#2563EB] hover:underline">
-                      Withdraw Funds
-                    </button>
-                    <Link
-                      to="/dashboard/strategies"
-                      className="bg-[#2563EB] text-white text-xs font-semibold px-4 py-2 rounded-md hover:opacity-90"
-                    >
-                      Explore Strategies
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <p className="text-xs text-gray-500 flex items-center gap-2">
-          <Info className="w-4 h-4 text-[#2563EB]" />
-          You will continue with your broker to add or withdraw funds.
-        </p>
 
         {/* Understanding your portfolio */}
         <section>
