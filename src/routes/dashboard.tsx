@@ -9,6 +9,7 @@ import { NotificationsPopover } from "@/components/NotificationsPopover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLearnGuide } from "@/components/learn/LearnGuideProvider";
 import { useFollowedStrategies } from "@/lib/useFollowedStrategies";
+import { popularStrategies } from "@/data/popularStrategies";
 import {
   Search,
   Trophy,
@@ -763,7 +764,7 @@ function PopularStrategies({ state }: { state: DashboardState }) {
         return {
           id: idForUrl,
           name: displayName,
-          owner: "",
+          owner: popularStrategies.find((p) => p.id === idForUrl)?.owner ?? "",
           category: "" as string,
           thisMonth:
             typeof mm.performance?.this_month_return_pct === "number"
@@ -841,74 +842,55 @@ function PopularStrategies({ state }: { state: DashboardState }) {
           <p className="text-sm text-gray-500">No strategies available right now.</p>
         </div>
       ) : grid ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((s, idx) => (
+        <div className="space-y-3">
+          {filtered.map((s) => (
             <article
               key={s.id}
-              className={`bg-white rounded-xl border p-4 ${
-                idx === 1 ? "border-[#2563EB] ring-1 ring-[#2563EB]/20" : "border-gray-200"
-              }`}
+              className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center gap-4 flex-wrap sm:flex-nowrap"
             >
-              <Link
-                to="/strategies/$username"
-                params={{ username: s.id }}
-                className="flex items-center gap-3 mb-3 group"
-              >
+              <div className="flex items-center gap-3 flex-1 min-w-[180px]">
                 {s.avatar ? (
                   <img
                     src={s.avatar}
                     alt={s.name}
-                    className="w-9 h-9 rounded-full object-cover shrink-0"
+                    className="w-11 h-11 rounded-full object-cover shrink-0"
                   />
                 ) : (
                   <div
-                    className="w-9 h-9 rounded-full font-semibold flex items-center justify-center text-xs"
+                    className="w-11 h-11 rounded-full font-semibold flex items-center justify-center text-sm shrink-0"
                     style={{ background: s.avatarBg, color: s.avatarFg }}
                   >
                     {s.initials}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm truncate group-hover:text-[#2563EB] transition-colors">
-                    {s.name}
-                  </p>
-                  {s.owner && <p className="text-xs text-gray-500 truncate">{s.owner}</p>}
+                  <p className="font-bold text-gray-900 truncate">{s.name}</p>
+                  {s.owner && <p className="text-sm text-gray-500 truncate">{s.owner}</p>}
                 </div>
+              </div>
+              <div className="text-center px-3">
+                <p className="text-[11px] font-semibold tracking-wider text-gray-400 mb-1">
+                  THIS MONTH
+                </p>
+                <p className="text-lg font-bold text-[#10B981]">
+                  {s.thisMonth == null ? "—" : `+${s.thisMonth}%`}
+                </p>
+              </div>
+              <div className="text-center px-3">
+                <p className="text-[11px] font-semibold tracking-wider text-gray-400 mb-1">
+                  LARGEST DROP
+                </p>
+                <p className="text-lg font-bold text-[#EF4444]">
+                  {s.largestDrop == null ? "—" : `${s.largestDrop}%`}
+                </p>
+              </div>
+              <Link
+                to="/strategies/$username"
+                params={{ username: s.id }}
+                className="border border-[#2563EB] text-[#2563EB] font-semibold px-6 py-2.5 rounded-xl hover:bg-[#EEF4FF] whitespace-nowrap"
+              >
+                View Strategy
               </Link>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-0.5">
-                    <StatLabel label="THIS MONTH" />
-                  </p>
-                  <p className="text-sm font-bold text-[#10B981]">
-                    {s.thisMonth == null ? "—" : `+${s.thisMonth}%`}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold tracking-wider text-gray-500 mb-0.5">
-                    <StatLabel label="LARGEST DROP" />
-                  </p>
-                  <p className="text-sm font-bold text-[#EF4444]">
-                    {s.largestDrop == null ? "—" : `${s.largestDrop}%`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Link
-                  to="/strategies/$username"
-                  params={{ username: s.id }}
-                  className="flex-1 text-center border border-gray-200 text-gray-700 text-xs font-semibold py-2 rounded-md hover:bg-gray-50"
-                >
-                  Details
-                </Link>
-                <Link
-                  to="/strategies/$strategyId/$step"
-                  params={{ strategyId: s.id, step: "step-1" }}
-                  className="flex-1 text-center bg-[#2563EB] text-white text-xs font-semibold py-2 rounded-md hover:opacity-90"
-                >
-                  Follow
-                </Link>
-              </div>
             </article>
           ))}
         </div>
