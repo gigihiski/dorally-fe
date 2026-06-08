@@ -60,14 +60,8 @@ function LoginPage() {
 
   useEffect(() => {
     if (!showSuccessPopup) return;
-    let cancelled = false;
-    void (async () => {
-      const route = await resolvePostLoginRoute();
-      if (!cancelled) navigate(route);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    // A fresh login always starts the onboarding flow at "Select your platform".
+    navigate({ to: "/onboarding/$step", params: { step: "select" } });
   }, [showSuccessPopup, navigate]);
 
   const validate = (): boolean => {
