@@ -481,14 +481,11 @@ function GettingStartedCard({ state }: { state: Exclude<DashboardState, "followe
       <h2 className="text-2xl font-bold text-gray-900 mb-2">{config.title}</h2>
       <p className="text-sm text-gray-500 mb-6 max-w-3xl">{config.body}</p>
       <div className="flex gap-3">
-        <button className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90">
-          {config.primary}
-        </button>
         <Link
           to="/dashboard/strategies"
-          className="border border-[#2563EB] text-[#2563EB] text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-[#EEF2FF]"
+          className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
         >
-          Explore Strategies First
+          {config.primary}
         </Link>
       </div>
       {config.badges}
