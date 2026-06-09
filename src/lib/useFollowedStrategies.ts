@@ -9,12 +9,23 @@ export type FollowedStrategy = PopularStrategy & {
   moneyManagerId: string;
   /** Demo trading account the strategy is followed with. */
   accountId: string;
-  /** Demo account value, derived from this-month performance. */
+  /** Demo account value. */
   accountValue: number;
+  /** Demo change today (currency). */
+  todaysChange: number;
+  /** Demo last settled strategy fee (currency). */
+  lastFee: number;
+  /** Demo next fee settlement date label. */
+  nextFeeCheck: string;
 };
 
 const DEMO_ACCOUNT_ID = "123456";
-const DEMO_BASE_VALUE = 5000;
+// Fixed demo figures so the dashboard/portfolio totals line up with the design
+// (account 5,842.40 + available 5,000 = 10,842.40; +84.20 today).
+const DEMO_ACCOUNT_VALUE = 5842.4;
+const DEMO_TODAYS_CHANGE = 84.2;
+const DEMO_LAST_FEE = 8.4;
+const DEMO_NEXT_FEE_CHECK = "Feb 21, 2026";
 
 /**
  * Resolves the user's ACTIVE followees (from the mock) into displayable strategy
@@ -39,7 +50,10 @@ export function useFollowedStrategies() {
         followeeId: f.id,
         moneyManagerId: f.money_manager_id ?? "",
         accountId: DEMO_ACCOUNT_ID,
-        accountValue: Number((DEMO_BASE_VALUE * (1 + s.thisMonth / 100)).toFixed(2)),
+        accountValue: DEMO_ACCOUNT_VALUE,
+        todaysChange: DEMO_TODAYS_CHANGE,
+        lastFee: DEMO_LAST_FEE,
+        nextFeeCheck: DEMO_NEXT_FEE_CHECK,
       };
     })
     .filter((x): x is FollowedStrategy => x !== null);

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, FileText, ShieldCheck, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { BarChart3, FileText, ShieldCheck, ChevronRight, Check, Info, Loader2 } from "lucide-react";
 import { DashboardHeader, LearnGrid } from "./dashboard";
 import { getPcxLinkStatus } from "@/services/integrations";
 import { useFollowedStrategies } from "@/lib/useFollowedStrategies";
@@ -38,10 +39,11 @@ function DashboardPortfolioPage() {
 
   const { strategies } = useFollowedStrategies();
   const hasStrategies = strategies.length > 0;
+  const [redirectOpen, setRedirectOpen] = useState(false);
 
   const followedValue = strategies.reduce((sum, s) => sum + s.accountValue, 0);
   const totalValue = followedValue + (verified ? AVAILABLE_ACCOUNT_VALUE : 0);
-  const todaysChange = Number((totalValue * 0.0078).toFixed(2));
+  const todaysChange = strategies.reduce((sum, s) => sum + s.todaysChange, 0);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -168,6 +170,109 @@ function DashboardPortfolioPage() {
           </section>
         )}
 
+        {/* Accounts for Following */}
+        {verified && (
+          <section>
+            <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#1E3A8A] mb-1">Accounts for Following</h2>
+                <p className="text-sm text-gray-500">Each account can follow one strategy at a time.</p>
+              </div>
+              <p className="text-sm text-gray-600">
+                Total <span className="font-bold text-gray-900">{fmtMoney(totalValue)}</span>{" "}
+                Available{" "}
+                <span className="font-bold text-gray-900">{fmtMoney(AVAILABLE_ACCOUNT_VALUE)}</span>
+              </p>
+            </div>
+            <div className="space-y-4">
+              {strategies.map((s) => (
+                <article
+                  key={s.followeeId}
+                  className="bg-white border border-gray-200 rounded-2xl p-6 flex items-center gap-4 flex-wrap"
+                >
+                  <div className="w-10 h-10 rounded-full border-2 border-[#DBEAFE] shrink-0" />
+                  <div className="flex-1 min-w-[220px]">
+                    <p className="font-bold text-gray-900">Account #{s.accountId} Following</p>
+                    <p className="text-sm text-gray-500">PrimeCodex · Following {s.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-gray-900">{fmtMoney(s.accountValue)}</p>
+                    <p className="text-xs font-semibold text-[#10B981]">
+                      +{fmtMoney(s.todaysChange)} TODAY
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4 ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => setRedirectOpen(true)}
+                      className="text-sm font-semibold text-[#2563EB] hover:underline"
+                    >
+                      Add Funds
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setRedirectOpen(true)}
+                      className="text-sm font-semibold text-[#2563EB] hover:underline"
+                    >
+                      Withdraw Funds
+                    </button>
+                    <Link
+                      to="/strategies/$username"
+                      params={{ username: s.id }}
+                      className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
+                    >
+                      Manage Account
+                    </Link>
+                  </div>
+                </article>
+              ))}
+              <article className="bg-white border border-gray-200 rounded-2xl p-6 flex items-center gap-4 flex-wrap">
+                <div className="w-10 h-10 rounded-full border-2 border-[#DBEAFE] flex items-center justify-center text-[#2563EB] shrink-0">
+                  <Check className="w-5 h-5" strokeWidth={3} />
+                </div>
+                <div className="flex-1 min-w-[220px]">
+                  <p className="font-bold text-gray-900">Account #789012 Available</p>
+                  <p className="text-sm text-gray-500">PrimeCodex · Ready to follow a strategy</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-gray-900">
+                    {fmtMoney(AVAILABLE_ACCOUNT_VALUE)}
+                  </p>
+                  <p className="text-[10px] font-semibold tracking-wider text-gray-400">AVAILABLE</p>
+                </div>
+                <div className="flex items-center gap-4 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setRedirectOpen(true)}
+                    className="text-sm font-semibold text-[#2563EB] hover:underline"
+                  >
+                    Add Funds
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setRedirectOpen(true)}
+                    className="text-sm font-semibold text-[#2563EB] hover:underline"
+                  >
+                    Withdraw Funds
+                  </button>
+                  <Link
+                    to="/dashboard/strategies"
+                    className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
+                  >
+                    Explore Strategies
+                  </Link>
+                </div>
+              </article>
+            </div>
+            <p className="text-xs text-gray-500 flex items-center gap-2 mt-4">
+              <Info className="w-4 h-4 text-[#2563EB]" />
+              You will continue with your broker to add or withdraw funds.
+            </p>
+          </section>
+        )}
+
         {/* Learn (image 2) */}
         {hasStrategies && <LearnGrid />}
 
@@ -202,6 +307,29 @@ function DashboardPortfolioPage() {
           </div>
         </section>
       </main>
+
+      {redirectOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] p-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-[#EEF4FF] flex items-center justify-center mx-auto mb-5">
+              <Loader2 className="w-7 h-7 text-[#2563EB] animate-spin" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              You're being redirected to PrimeCodex
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Please wait while we take you to your broker to complete this action.
+            </p>
+            <button
+              type="button"
+              onClick={() => setRedirectOpen(false)}
+              className="text-sm font-semibold text-gray-500 underline hover:text-gray-700"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

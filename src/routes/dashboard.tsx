@@ -380,7 +380,7 @@ function PortfolioHero({ state }: { state: DashboardState }) {
     const fmtMoney = (n: number) =>
       `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const totalValue = strategies.reduce((sum, s) => sum + s.accountValue, 0) + 5000;
-    const todaysChange = Number((totalValue * 0.0078).toFixed(2));
+    const todaysChange = strategies.reduce((sum, s) => sum + s.todaysChange, 0);
     return (
       <section className="rounded-2xl bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white px-8 py-7 grid grid-cols-3 gap-6 items-end shadow-sm">
         <div>

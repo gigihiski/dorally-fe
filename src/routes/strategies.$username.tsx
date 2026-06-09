@@ -446,32 +446,94 @@ function StrategyDetailView({
           {/* RIGHT COLUMN */}
           <div className="space-y-6">
             <section className="bg-white border border-gray-200 rounded-2xl p-6">
-              <h3 className="font-bold text-gray-900 mb-4">Ready to start?</h3>
+              <h3 className="font-bold text-gray-900 mb-4">
+                {isFollowing && followedEntry ? "Your Position" : "Ready to start?"}
+              </h3>
               <div className="space-y-3 mb-5">
-                <Row
-                  className="text-sm"
-                  label="Start from"
-                  value={<span className="font-bold text-gray-900">{minStartDisplay}</span>}
-                  hint="The minimum amount needed to follow this strategy."
-                />
-                <Row
-                  className="text-sm"
-                  label="Profit-sharing fee"
-                  value={<span className="font-bold text-gray-900">{profitShareDisplay}</span>}
-                  hint="The percentage fee charged only on new profits."
-                />
-                <Row
-                  className="text-sm"
-                  label="Fee timing"
-                  value={<span className="font-bold text-gray-900">{feeTimingDisplay}</span>}
-                  hint="When the profit-sharing fee is calculated and settled."
-                />
-                <Row
-                  className="text-sm"
-                  label="Control"
-                  value={<span className="font-bold text-[#2563EB]">Stop anytime</span>}
-                  hint="You can stop following this strategy at any time."
-                />
+                {isFollowing && followedEntry ? (
+                  <>
+                    <Row
+                      className="text-sm"
+                      label="Account Value"
+                      value={
+                        <span className="font-bold text-gray-900">
+                          $
+                          {followedEntry.accountValue.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      }
+                    />
+                    <Row
+                      className="text-sm"
+                      label="Today's Change"
+                      value={
+                        <span className="font-bold text-[#10B981]">
+                          +
+                          {followedEntry.todaysChange.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      }
+                    />
+                    <Row
+                      className="text-sm"
+                      label="This Month"
+                      value={
+                        <span className="font-bold text-[#10B981]">+{followedEntry.thisMonth}%</span>
+                      }
+                    />
+                    <Row
+                      className="text-sm"
+                      label="Last Fee"
+                      value={
+                        <span className="font-bold text-gray-900">
+                          $
+                          {followedEntry.lastFee.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      }
+                    />
+                    <Row
+                      className="text-sm"
+                      label="Next Fee Check"
+                      value={
+                        <span className="font-bold text-gray-900">{followedEntry.nextFeeCheck}</span>
+                      }
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Row
+                      className="text-sm"
+                      label="Start from"
+                      value={<span className="font-bold text-gray-900">{minStartDisplay}</span>}
+                      hint="The minimum amount needed to follow this strategy."
+                    />
+                    <Row
+                      className="text-sm"
+                      label="Profit-sharing fee"
+                      value={<span className="font-bold text-gray-900">{profitShareDisplay}</span>}
+                      hint="The percentage fee charged only on new profits."
+                    />
+                    <Row
+                      className="text-sm"
+                      label="Fee timing"
+                      value={<span className="font-bold text-gray-900">{feeTimingDisplay}</span>}
+                      hint="When the profit-sharing fee is calculated and settled."
+                    />
+                    <Row
+                      className="text-sm"
+                      label="Control"
+                      value={<span className="font-bold text-[#2563EB]">Stop anytime</span>}
+                      hint="You can stop following this strategy at any time."
+                    />
+                  </>
+                )}
               </div>
               {isFollowing ? (
                 <button
