@@ -195,13 +195,58 @@ function DashboardPortfolioPage() {
                     <p className="font-bold text-gray-900">Account #{s.accountId} Following</p>
                     <p className="text-sm text-gray-500">PrimeCodex · Following {s.name}</p>
                   </div>
+                  <div className="flex flex-col items-end gap-2 ml-auto">
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-gray-900">{fmtMoney(s.accountValue)}</p>
+                      <p className="text-xs font-semibold text-[#10B981]">
+                        +{fmtMoney(s.todaysChange)} TODAY
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setRedirectOpen(true)}
+                        className="text-sm font-semibold text-[#2563EB] hover:underline"
+                      >
+                        Add Funds
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setRedirectOpen(true)}
+                        className="text-sm font-semibold text-[#2563EB] hover:underline"
+                      >
+                        Withdraw Funds
+                      </button>
+                      <Link
+                        to="/strategies/$username"
+                        params={{ username: s.id }}
+                        className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
+                      >
+                        Manage Account
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+              <article className="bg-white border border-gray-200 rounded-2xl p-6 flex items-center gap-4 flex-wrap">
+                <div className="w-10 h-10 rounded-full border-2 border-[#DBEAFE] flex items-center justify-center text-[#2563EB] shrink-0">
+                  <Check className="w-5 h-5" strokeWidth={3} />
+                </div>
+                <div className="flex-1 min-w-[220px]">
+                  <p className="font-bold text-gray-900">Account #789012 Available</p>
+                  <p className="text-sm text-gray-500">PrimeCodex · Ready to follow a strategy</p>
+                </div>
+                <div className="flex flex-col items-end gap-2 ml-auto">
                   <div className="text-right">
-                    <p className="text-xl font-bold text-gray-900">{fmtMoney(s.accountValue)}</p>
-                    <p className="text-xs font-semibold text-[#10B981]">
-                      +{fmtMoney(s.todaysChange)} TODAY
+                    <p className="text-xl font-bold text-gray-900">
+                      {fmtMoney(AVAILABLE_ACCOUNT_VALUE)}
+                    </p>
+                    <p className="text-[10px] font-semibold tracking-wider text-gray-400">
+                      AVAILABLE
                     </p>
                   </div>
-                  <div className="flex items-center gap-4 ml-auto">
+                  <div className="flex items-center gap-4">
                     <button
                       type="button"
                       onClick={() => setRedirectOpen(true)}
@@ -218,51 +263,12 @@ function DashboardPortfolioPage() {
                       Withdraw Funds
                     </button>
                     <Link
-                      to="/strategies/$username"
-                      params={{ username: s.id }}
+                      to="/dashboard/strategies"
                       className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
                     >
-                      Manage Account
+                      Explore Strategies
                     </Link>
                   </div>
-                </article>
-              ))}
-              <article className="bg-white border border-gray-200 rounded-2xl p-6 flex items-center gap-4 flex-wrap">
-                <div className="w-10 h-10 rounded-full border-2 border-[#DBEAFE] flex items-center justify-center text-[#2563EB] shrink-0">
-                  <Check className="w-5 h-5" strokeWidth={3} />
-                </div>
-                <div className="flex-1 min-w-[220px]">
-                  <p className="font-bold text-gray-900">Account #789012 Available</p>
-                  <p className="text-sm text-gray-500">PrimeCodex · Ready to follow a strategy</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-gray-900">
-                    {fmtMoney(AVAILABLE_ACCOUNT_VALUE)}
-                  </p>
-                  <p className="text-[10px] font-semibold tracking-wider text-gray-400">AVAILABLE</p>
-                </div>
-                <div className="flex items-center gap-4 ml-auto">
-                  <button
-                    type="button"
-                    onClick={() => setRedirectOpen(true)}
-                    className="text-sm font-semibold text-[#2563EB] hover:underline"
-                  >
-                    Add Funds
-                  </button>
-                  <span className="text-gray-300">|</span>
-                  <button
-                    type="button"
-                    onClick={() => setRedirectOpen(true)}
-                    className="text-sm font-semibold text-[#2563EB] hover:underline"
-                  >
-                    Withdraw Funds
-                  </button>
-                  <Link
-                    to="/dashboard/strategies"
-                    className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
-                  >
-                    Explore Strategies
-                  </Link>
                 </div>
               </article>
             </div>
